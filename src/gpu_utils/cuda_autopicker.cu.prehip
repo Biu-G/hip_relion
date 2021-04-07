@@ -45,7 +45,7 @@ AutoPickerCuda::AutoPickerCuda(AutoPicker *basePicker, int dev_id, const char * 
 	======================================================*/
 	device_id = dev_id;
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 
 	if(dev_id >= devCount)
 	{
@@ -77,7 +77,7 @@ AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char
 	======================================================*/
 	device_id = dev_id;
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 
 	if(dev_id >= devCount)
 	{

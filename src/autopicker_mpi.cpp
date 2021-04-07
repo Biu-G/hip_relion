@@ -50,7 +50,7 @@ void AutoPickerMpi::read(int argc, char **argv)
 int AutoPickerMpi::deviceInitialise()
 {
 	int devCount;
-	cudaGetDeviceCount(&devCount);
+	hipGetDeviceCount(&devCount);
 
 	std::vector < std::vector < std::string > > allThreadIDs;
 	untangleDeviceIDs(gpu_ids, allThreadIDs);

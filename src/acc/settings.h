@@ -3,6 +3,8 @@
 
 #include "src/macros.h"
 
+#define cudaStreamPerThread 0
+
 #ifdef ACC_DOUBLE_PRECISION
 	#define XFLOAT double
 	#ifndef CUDA

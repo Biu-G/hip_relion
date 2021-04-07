@@ -125,7 +125,7 @@ void MlOptimiserMpi::initialise()
 			cudaDeviceProp deviceProp;
 			int compatibleDevices(0);
 			// Send device count seen by this slave
-			HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+			HANDLE_ERROR(hipGetDeviceCount(&devCount));
 			for(int i=0; i<devCount; i++ )
 			{
 				HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, i));
@@ -999,7 +999,7 @@ void MlOptimiserMpi::expectation()
 		}
 
 		int devCount;
-		HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+		HANDLE_ERROR(hipGetDeviceCount(&devCount));
 		HANDLE_ERROR(cudaDeviceSynchronize());
 
 		for (int i = 0; i < accDataBundles.size(); i ++)

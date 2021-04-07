@@ -68,7 +68,7 @@ size_t MlDeviceBundle::checkFixedSizedObjects(int shares)
 {
 	int devCount;
 	size_t BoxLimit;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 		CRITICAL(ERR_GPUID);
 
@@ -85,7 +85,7 @@ size_t MlDeviceBundle::checkFixedSizedObjects(int shares)
 void MlDeviceBundle::setupFixedSizedObjects()
 {
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
@@ -152,7 +152,7 @@ void MlDeviceBundle::setupTunableSizedObjects(size_t allocationSize)
 {
 	unsigned nr_models = baseMLO->mymodel.nr_classes;
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
@@ -225,7 +225,7 @@ void MlDeviceBundle::setupTunableSizedObjects(size_t allocationSize)
 void MlOptimiserCuda::resetData()
 {
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
@@ -254,7 +254,7 @@ void MlOptimiserCuda::doThreadExpectationSomeParticles(int thread_id)
 //	CTOC(cudaMLO->timer,"interParticle");
 
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;

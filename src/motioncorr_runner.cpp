@@ -224,7 +224,7 @@ void MotioncorrRunner::initialise()
 			untangleDeviceIDs(gpu_ids, allThreadIDs);
 		else if (verb>0)
 			std::cout << "gpu-ids not specified, threads will automatically be mapped to devices (incrementally)."<< std::endl;
-		HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+		HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	}
 #endif
 

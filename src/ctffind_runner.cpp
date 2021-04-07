@@ -256,7 +256,7 @@ void CtffindRunner::initialise()
 #ifdef CUDA
 			if (verb>0)
 				std::cout << "gpu-ids were not specified, so threads will automatically be mapped to devices (incrementally)."<< std::endl;
-			HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+			HANDLE_ERROR(hipGetDeviceCount(&devCount));
 #else
 			if (verb>0)
 				REPORT_ERROR("gpu-ids were not specified, but we could not figure out which GPU to use because RELION was not compiled with CUDA support.");
