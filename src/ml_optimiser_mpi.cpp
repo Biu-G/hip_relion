@@ -122,13 +122,13 @@ void MlOptimiserMpi::initialise()
 		// ------------------------------ FIGURE OUT GLOBAL DEVICE MAP------------------------------------------
 		if (!node->isMaster())
 		{
-			cudaDeviceProp deviceProp;
+			hipDeviceProp_t deviceProp;
 			int compatibleDevices(0);
 			// Send device count seen by this slave
 			HANDLE_ERROR(hipGetDeviceCount(&devCount));
 			for(int i=0; i<devCount; i++ )
 			{
-				HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, i));
+				HANDLE_ERROR(hipGetDeviceProperties(&deviceProp, i));
 				if(deviceProp.major>CUDA_CC_MAJOR)
 					compatibleDevices+=1;
 				else if(deviceProp.major==CUDA_CC_MAJOR && deviceProp.minor>=CUDA_CC_MINOR)
@@ -1000,7 +1000,7 @@ void MlOptimiserMpi::expectation()
 
 		int devCount;
 		HANDLE_ERROR(hipGetDeviceCount(&devCount));
-		HANDLE_ERROR(cudaDeviceSynchronize());
+		HANDLE_ERROR(hipDeviceSynchronize());
 
 		for (int i = 0; i < accDataBundles.size(); i ++)
 		{
@@ -1010,10 +1010,10 @@ void MlOptimiserMpi::expectation()
 				CRITICAL(ERR_GPUID);
 			}
 			else
-				HANDLE_ERROR(cudaSetDevice(((MlDeviceBundle*)accDataBundles[i])->device_id));
+				HANDLE_ERROR(hipSetDevice(((MlDeviceBundle*)accDataBundles[i])->device_id));
 
 			size_t free, total, allocationSize;
-			HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
+			HANDLE_ERROR(hipMemGetInfo( &free, &total ));
 
 			free = (float) free / (float)cudaDeviceShares[i];
 			size_t required_free = requested_free_gpu_memory + GPU_THREAD_MEMORY_OVERHEAD_MB*1000*1000*threadcountOnDevice[i];

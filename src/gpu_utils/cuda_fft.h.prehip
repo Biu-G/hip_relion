@@ -173,7 +173,7 @@ public:
 
 		size_t needed, avail, total;
 		needed = estimate(batchSize[0]);
-		DEBUG_HANDLE_ERROR(cudaMemGetInfo( &avail, &total ));
+		DEBUG_HANDLE_ERROR(hipMemGetInfo( &avail, &total ));
 
 //		std::cout << std::endl << "needed = ";
 //		printf("%15zu\n", needed);
@@ -234,7 +234,7 @@ public:
 		fouriers.device_alloc();
 		fouriers.host_alloc();
 
-//		DEBUG_HANDLE_ERROR(cudaMemGetInfo( &avail, &total ));
+//		DEBUG_HANDLE_ERROR(hipMemGetInfo( &avail, &total ));
 //		needed = estimate(batchSize[0], fudge);
 
 //		std::cout << "after alloc: " << std::endl << std::endl << "needed = ";

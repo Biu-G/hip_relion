@@ -53,7 +53,7 @@ AutoPickerCuda::AutoPickerCuda(AutoPicker *basePicker, int dev_id, const char * 
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(dev_id));
+		HANDLE_ERROR(hipSetDevice(dev_id));
 };
 
 AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char * timing_fnm) :
@@ -85,7 +85,7 @@ AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(dev_id));
+		HANDLE_ERROR(hipSetDevice(dev_id));
 };
 
 void AutoPickerCuda::run()
@@ -323,7 +323,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 		cudaTransformer1.setSize(basePckr->workSize,basePckr->workSize, 1, Npsi, FFTW_BACKWARD);
 		CTOC(timer,"setSize_cudaTr");
 	}
-	HANDLE_ERROR(cudaDeviceSynchronize());
+	HANDLE_ERROR(hipDeviceSynchronize());
 
 	if(cudaTransformer1.batchSize.size()>1 && !have_warned_batching)
 	{
@@ -828,7 +828,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 
 				CTIC(timer,"CudaInverseFourierTransform_1");
 				cudaTransformer1.backward();
-				HANDLE_ERROR(cudaDeviceSynchronize());
+				HANDLE_ERROR(hipDeviceSynchronize());
 				CTOC(timer,"CudaInverseFourierTransform_1");
 
 
@@ -845,7 +845,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 				// So now we already had precalculated: Mdiff2 = 1/sig*Sum(X^2) - 2/sig*Sum(X) + mu^2/sig*Sum(1)
 				// Still to do (per reference): - 2/sig*Sum(AX) + 2*mu/sig*Sum(A) + Sum(A^2)
 				CTIC(timer,"probRatio");
-				HANDLE_ERROR(cudaDeviceSynchronize());
+				HANDLE_ERROR(hipDeviceSynchronize());
 				dim3 PR_blocks(ceilf((float)(cudaTransformer1.reals.size/cudaTransformer1.batchSize[psiIter])/(float)PROBRATIO_BLOCK_SIZE));
 				cuda_kernel_probRatio<<<PR_blocks,PROBRATIO_BLOCK_SIZE>>>(
 						d_Mccf_best.d_ptr,

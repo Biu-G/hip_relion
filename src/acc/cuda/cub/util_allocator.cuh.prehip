@@ -439,7 +439,7 @@ struct CachingDeviceAllocator
             if (device != entrypoint_device)
             {
                 if (CubDebug(error = cudaGetDevice(&entrypoint_device))) return error;
-                if (CubDebug(error = cudaSetDevice(device))) return error;
+                if (CubDebug(error = hipSetDevice(device))) return error;
             }
 
             // Attempt to allocate
@@ -506,7 +506,7 @@ struct CachingDeviceAllocator
             // Attempt to revert back to previous device if necessary
             if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device))
             {
-                if (CubDebug(error = cudaSetDevice(entrypoint_device))) return error;
+                if (CubDebug(error = hipSetDevice(entrypoint_device))) return error;
             }
         }
 
@@ -592,7 +592,7 @@ struct CachingDeviceAllocator
         if (device != entrypoint_device)
         {
             if (CubDebug(error = cudaGetDevice(&entrypoint_device))) return error;
-            if (CubDebug(error = cudaSetDevice(device))) return error;
+            if (CubDebug(error = hipSetDevice(device))) return error;
         }
 
         if (recached)
@@ -613,7 +613,7 @@ struct CachingDeviceAllocator
         // Reset device
         if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device))
         {
-            if (CubDebug(error = cudaSetDevice(entrypoint_device))) return error;
+            if (CubDebug(error = hipSetDevice(entrypoint_device))) return error;
         }
 
         return error;
@@ -659,7 +659,7 @@ struct CachingDeviceAllocator
             // Set current device ordinal if necessary
             if (begin->device != current_device)
             {
-                if (CubDebug(error = cudaSetDevice(begin->device))) break;
+                if (CubDebug(error = hipSetDevice(begin->device))) break;
                 current_device = begin->device;
             }
 
@@ -681,7 +681,7 @@ struct CachingDeviceAllocator
         // Attempt to revert back to entry-point device if necessary
         if (entrypoint_device != INVALID_DEVICE_ORDINAL)
         {
-            if (CubDebug(error = cudaSetDevice(entrypoint_device))) return error;
+            if (CubDebug(error = hipSetDevice(entrypoint_device))) return error;
         }
 
         return error;

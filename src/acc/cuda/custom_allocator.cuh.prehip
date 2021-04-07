@@ -199,7 +199,7 @@ private:
 		else
 		{
 			size_t free, total;
-			DEBUG_HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
+			DEBUG_HANDLE_ERROR(hipMemGetInfo( &free, &total ));
 			return free;
 		}
 	}

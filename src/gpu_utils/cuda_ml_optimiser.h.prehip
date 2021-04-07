@@ -447,7 +447,7 @@ public:
 
 	void syncAllBackprojects()
 	{
-		DEBUG_HANDLE_ERROR(cudaDeviceSynchronize());
+		DEBUG_HANDLE_ERROR(hipDeviceSynchronize());
 	}
 
 
@@ -458,7 +458,7 @@ public:
 		coarseProjectionPlans.clear();
 		//Delete this lastly
 		delete allocator;
-		HANDLE_ERROR(cudaSetDevice(device_id));
+		HANDLE_ERROR(hipSetDevice(device_id));
 		HANDLE_ERROR(cudaDeviceReset());
 	}
 

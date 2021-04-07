@@ -44,8 +44,8 @@
 #include "src/ml_optimiser.h"
 #ifdef CUDA
 #include "src/acc/cuda/cuda_ml_optimiser.h"
-#include <nvToolsExt.h>
-#include <cuda_profiler_api.h>
+// #include <nvToolsExt.h>
+#include <rocprofiler.h>
 #endif
 #ifdef ALTCPU
 	#include <tbb/tbb.h>
@@ -1142,13 +1142,13 @@ void MlOptimiser::initialise()
 		int devCount;
 		HANDLE_ERROR(hipGetDeviceCount(&devCount));
 
-		cudaDeviceProp deviceProp;
+		hipDeviceProp_t deviceProp;
 		int compatibleDevices(0);
 		// Send device count seen by this slave
 		HANDLE_ERROR(hipGetDeviceCount(&devCount));
 		for(int i=0; i<devCount; i++ )
                 {
-                	HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, i));
+                	HANDLE_ERROR(hipGetDeviceProperties(&deviceProp, i));
                         if(deviceProp.major>CUDA_CC_MAJOR)
                         	compatibleDevices+=1;
                        	else if(deviceProp.major==CUDA_CC_MAJOR && deviceProp.minor>=CUDA_CC_MINOR)
@@ -2689,7 +2689,7 @@ void MlOptimiser::expectation()
 
 		int devCount;
 		HANDLE_ERROR(hipGetDeviceCount(&devCount));
-		HANDLE_ERROR(cudaDeviceSynchronize());
+		HANDLE_ERROR(hipDeviceSynchronize());
 		for (int i = 0; i < accDataBundles.size(); i ++)
 		{
 			if(((MlDeviceBundle*)accDataBundles[i])->device_id >= devCount || ((MlDeviceBundle*)accDataBundles[i])->device_id < 0 )
@@ -2698,10 +2698,10 @@ void MlOptimiser::expectation()
 				CRITICAL(ERR_GPUID);
 			}
 			else
-				HANDLE_ERROR(cudaSetDevice(((MlDeviceBundle*)accDataBundles[i])->device_id));
+				HANDLE_ERROR(hipSetDevice(((MlDeviceBundle*)accDataBundles[i])->device_id));
 
 			size_t free, total, allocationSize;
-			HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
+			HANDLE_ERROR(hipMemGetInfo( &free, &total ));
 
 			size_t required_free = requested_free_gpu_memory + GPU_THREAD_MEMORY_OVERHEAD_MB*1000*1000*threadcountOnDevice[i];
 

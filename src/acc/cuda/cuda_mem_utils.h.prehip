@@ -31,7 +31,7 @@ static void cudaPrintMemInfo()
 {
 	size_t free;
 	size_t total;
-	DEBUG_HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
+	DEBUG_HANDLE_ERROR(hipMemGetInfo( &free, &total ));
 	float free_hr(free/(1024.*1024.));
 	float total_hr(total/(1024.*1024.));
     printf( "free %.2fMiB, total %.2fMiB, used %.2fMiB\n",

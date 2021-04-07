@@ -2841,10 +2841,10 @@ size_t MlDeviceBundle::checkFixedSizedObjects(int shares)
 	if(device_id >= devCount)
 		CRITICAL(ERR_GPUID);
 
-	HANDLE_ERROR(cudaSetDevice(device_id));
+	HANDLE_ERROR(hipSetDevice(device_id));
 
 	size_t free(0), total(0);
-	DEBUG_HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
+	DEBUG_HANDLE_ERROR(hipMemGetInfo( &free, &total ));
 	float margin(1.05);
 	BoxLimit = pow(free/(margin*2.5*sizeof(XFLOAT)*((float)shares)),(1/3.0)) / (2.0);
 	size_t BytesNeeded = ((float)shares)*margin*2.5*sizeof(XFLOAT)*pow((baseMLO->mymodel.ori_size*2),3);
@@ -2863,7 +2863,7 @@ void MlDeviceBundle::setupFixedSizedObjects()
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(device_id));
+		HANDLE_ERROR(hipSetDevice(device_id));
 
 	//Can we pre-generate projector plan and corresponding euler matrices for all particles
 	if (baseMLO->do_skip_align || baseMLO->do_skip_rotate || baseMLO->do_auto_refine || baseMLO->mymodel.orientational_prior_mode != NOPRIOR)
@@ -2926,7 +2926,7 @@ void MlDeviceBundle::setupTunableSizedObjects(size_t allocationSize)
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(device_id));
+		HANDLE_ERROR(hipSetDevice(device_id));
 
 	/*======================================================
 	                    CUSTOM ALLOCATOR
@@ -2999,7 +2999,7 @@ void MlOptimiserCuda::resetData()
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(device_id));
+		HANDLE_ERROR(hipSetDevice(device_id));
 
 	unsigned nr_classes = baseMLO->mymodel.nr_classes;
 
@@ -3030,7 +3030,7 @@ void MlOptimiserCuda::doThreadExpectationSomeParticles(int thread_id)
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		DEBUG_HANDLE_ERROR(cudaSetDevice(device_id));
+		DEBUG_HANDLE_ERROR(hipSetDevice(device_id));
 	//std::cerr << " calling on device " << device_id << std::endl;
 	//put mweight allocation here
 	size_t first_ipart = 0, last_ipart = 0;

@@ -160,7 +160,7 @@ public:
     /// Use this iterator to bind \p ptr with a texture reference
     template <typename QualifiedT>
     hipError_t BindTexture(
-        QualifiedT      *ptr,               ///< Native pointer to wrap that is aligned to hipDeviceProp_t::textureAlignment
+        QualifiedT      *ptr,               ///< Native pointer to wrap that is aligned to hipDeviceProp_t_t::textureAlignment
         size_t          bytes = size_t(-1),         ///< Number of bytes in the range
         size_t          tex_offset = 0)     ///< OffsetT (in items) from \p ptr denoting the position of the iterator
     {
