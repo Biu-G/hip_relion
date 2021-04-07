@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 #endif()
 project(Relion)
 
+include(/opt/rocm/hip/cmake/FindHIP.cmake)
+
 # Use new policy for OS X @rpath
 if(POLICY CMP0042)
     cmake_policy(SET CMP0042 NEW)
@@ -146,9 +148,9 @@ if(HIP_FOUND)
     if(CUDA)
         add_definitions(-DCUDA)
     endif()
-else(CUDA_FOUND)
+else(HIP_FOUND)
     message(STATUS "Using non-cuda compilation....")
-endif(CUDA_FOUND)
+endif(HIP_FOUND)
 
 # ------------------------------------------------------------------ALLOCATOR CHOICE--
 option(CachedAlloc "CachedAlloc" ON)
