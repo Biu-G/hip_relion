@@ -91,22 +91,22 @@ struct IteratorTexRef
         static TexRef ref;
 
         /// Bind texture
-        static cudaError_t BindTexture(void *d_in, size_t &offset)
+        static hipError_t BindTexture(void *d_in, size_t &offset)
         {
             if (d_in)
             {
-                cudaChannelFormatDesc tex_desc = cudaCreateChannelDesc<TextureWord>();
+                hipChannelFormatDesc tex_desc = hipCreateChannelDesc<TextureWord>();
                 ref.channelDesc = tex_desc;
-                return (CubDebug(cudaBindTexture(&offset, ref, d_in)));
+                return (CubDebug(hipBindTexture(&offset, ref, d_in)));
             }
 
-            return cudaSuccess;
+            return hipSuccess;
         }
 
         /// Unbind texture
-        static cudaError_t UnbindTexture()
+        static hipError_t UnbindTexture()
         {
-            return CubDebug(cudaUnbindTexture(ref));
+            return CubDebug(hipUnbindTexture(ref));
         }
 
         /// Fetch element
@@ -172,14 +172,14 @@ typename IteratorTexRef<T>::template TexId<UNIQUE_ID>::TexRef IteratorTexRef<T>:
  * dereference a device array of doubles through texture cache.
  * \par
  * \code
- * #include <cub/cub.cuh>   // or equivalently <cub/iterator/tex_ref_input_iterator.cuh>
+ * #include <hipcub/hipcub.hpp>   // or equivalently <cub/iterator/tex_ref_input_iterator.cuh>
  *
  * // Declare, allocate, and initialize a device array
  * int num_items;   // e.g., 7
  * double *d_in;    // e.g., [8.0, 6.0, 7.0, 5.0, 3.0, 0.0, 9.0]
  *
  * // Create an iterator wrapper
- * cub::TexRefInputIterator<double, __LINE__> itr;
+ * hipcub::TexRefInputIterator<double, __LINE__> itr;
  * itr.BindTexture(d_in, sizeof(double) * num_items);
  * ...
  *
@@ -243,20 +243,20 @@ public:
 */
     /// Use this iterator to bind \p ptr with a texture reference
     template <typename QualifiedT>
-    cudaError_t BindTexture(
-        QualifiedT      *ptr,                   ///< Native pointer to wrap that is aligned to cudaDeviceProp::textureAlignment
+    hipError_t BindTexture(
+        QualifiedT      *ptr,                   ///< Native pointer to wrap that is aligned to hipDeviceProp_t::textureAlignment
         size_t          bytes = size_t(-1),     ///< Number of bytes in the range
         size_t          tex_offset = 0)         ///< OffsetT (in items) from \p ptr denoting the position of the iterator
     {
         this->ptr = const_cast<typename RemoveQualifiers<QualifiedT>::Type *>(ptr);
         size_t offset;
-        cudaError_t retval = TexId::BindTexture(this->ptr + tex_offset, offset);
+        hipError_t retval = TexId::BindTexture(this->ptr + tex_offset, offset);
         this->tex_offset = (difference_type) (offset / sizeof(QualifiedT));
         return retval;
     }
 
     /// Unbind this iterator from its texture reference
-    cudaError_t UnbindTexture()
+    hipError_t UnbindTexture()
     {
         return TexId::UnbindTexture();
     }

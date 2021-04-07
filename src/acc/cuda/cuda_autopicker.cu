@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #undef ALTCPU
 #include <sys/time.h>
 #include <stdio.h>
@@ -6,7 +7,7 @@
 #include <ctime>
 #include <iostream>
 #include <fstream>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include <signal.h>
 
 #include "src/ml_optimiser.h"
@@ -54,7 +55,7 @@ AutoPickerCuda::AutoPickerCuda(AutoPicker *basePicker, int dev_id, const char * 
 	======================================================*/
 	device_id = dev_id;
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 
 	if(dev_id >= devCount)
 	{
@@ -62,7 +63,7 @@ AutoPickerCuda::AutoPickerCuda(AutoPicker *basePicker, int dev_id, const char * 
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(dev_id));
+		HANDLE_ERROR(hipSetDevice(dev_id));
 };
 
 AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char * timing_fnm) :
@@ -86,7 +87,7 @@ AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char
 	======================================================*/
 	device_id = dev_id;
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 
 	if(dev_id >= devCount)
 	{
@@ -94,7 +95,7 @@ AutoPickerCuda::AutoPickerCuda(AutoPickerMpi *basePicker, int dev_id, const char
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(dev_id));
+		HANDLE_ERROR(hipSetDevice(dev_id));
 };
 
 void AutoPickerCuda::run()
@@ -166,7 +167,7 @@ void AutoPickerCuda::run()
 	if (basePckr->verb > 0)
 		progress_bar(my_nr_micrographs);
 
-	cudaDeviceReset();
+	hipDeviceReset();
 
 }
 
@@ -188,11 +189,11 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(AccPtr< ACCCOMPLEX > &d_Fmi
 
 	CTIC(timer,"PRE-multi_0");
 	int Bsize( (int) ceilf(( float)d_Fmic.getSize()/(float)BLOCK_SIZE));
-	cuda_kernel_convol_B<<<Bsize,BLOCK_SIZE>>>(   ~d_Fmic,
+	hipLaunchKernelGGL(cuda_kernel_convol_B, Bsize, BLOCK_SIZE, 0, 0,    ~d_Fmic,
 												  ~d_Fmsk,
 												  ~d_Fcov,
 												  d_Fmic.getSize());
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 	CTOC(timer,"PRE-multi_0");
 
 	CTIC(timer,"PRE-window_0");
@@ -208,20 +209,20 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(AccPtr< ACCCOMPLEX > &d_Fmi
 	CTOC(timer,"PRE-Transform_0");
 
 	Bsize = ( (int) ceilf(( float)cudaTransformer2.reals.getSize()/(float)BLOCK_SIZE));
-	cuda_kernel_multi<XFLOAT><<<Bsize,BLOCK_SIZE>>>(
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_multi<XFLOAT>), Bsize, BLOCK_SIZE, 0, 0, 
 			~cudaTransformer2.reals,
 			~cudaTransformer2.reals,
 			(XFLOAT) normfft,
 			cudaTransformer2.reals.getSize());
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 	CTIC(timer,"PRE-multi_1");
-	cuda_kernel_multi<XFLOAT><<<Bsize,BLOCK_SIZE>>>(
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_multi<XFLOAT>), Bsize, BLOCK_SIZE, 0, 0, 
 			~cudaTransformer2.reals,
 			~cudaTransformer2.reals,
 			~d_Mstddev,
 			(XFLOAT) -1,
 			cudaTransformer2.reals.getSize());
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 	CTOC(timer,"PRE-multi_1");
 
 	CTIC(timer,"PRE-CenterFFT_0");
@@ -236,11 +237,11 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(AccPtr< ACCCOMPLEX > &d_Fmi
 
 	CTIC(timer,"PRE-multi_2");
 	Bsize = ( (int) ceilf(( float)d_Fmsk.getSize()/(float)BLOCK_SIZE));
-	cuda_kernel_convol_A<<<Bsize,BLOCK_SIZE>>>( 	  ~d_Fmsk,
+	hipLaunchKernelGGL(cuda_kernel_convol_A, Bsize, BLOCK_SIZE, 0, 0,  	  ~d_Fmsk,
 													  ~d_Fmic2,
 													  ~d_Fcov,
 													  d_Fmsk.getSize());
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 	CTOC(timer,"PRE-multi_2");
 
 
@@ -259,12 +260,12 @@ void AutoPickerCuda::calculateStddevAndMeanUnderMask(AccPtr< ACCCOMPLEX > &d_Fmi
 
 	CTIC(timer,"PRE-multi_3");
 	Bsize = ( (int) ceilf(( float)d_Mstddev.getSize()/(float)BLOCK_SIZE));
-		cuda_kernel_finalizeMstddev<<<Bsize,BLOCK_SIZE>>>(
+		hipLaunchKernelGGL(cuda_kernel_finalizeMstddev, Bsize, BLOCK_SIZE, 0, 0, 
 		~d_Mstddev,
 		~cudaTransformer2.reals,
 		normfft,
 		d_Mstddev.getSize());
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 	CTOC(timer,"PRE-multi_3");
 
 	CTIC(timer,"PRE-CenterFFT_1");
@@ -340,7 +341,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 		cudaTransformer1.setSize(basePckr->workSize,basePckr->workSize, 1, Npsi, FFTW_BACKWARD);
 		CTOC(timer,"setSize_cudaTr");
 	}
-	HANDLE_ERROR(cudaDeviceSynchronize());
+	HANDLE_ERROR(hipDeviceSynchronize());
 
 	if(cudaTransformer1.batchSize.size()>1 && !have_warned_batching)
 	{
@@ -496,11 +497,11 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 		CTIC(timer,"FourierTransform_0");
 		micTransformer.forward();
 		int FMultiBsize = ( (int) ceilf(( float)micTransformer.fouriers.getSize()*2/(float)BLOCK_SIZE));
-		CudaKernels::cuda_kernel_multi<XFLOAT><<<FMultiBsize,BLOCK_SIZE>>>(
+		hipLaunchKernelGGL(HIP_KERNEL_NAME(CudaKernels::cuda_kernel_multi<XFLOAT>), FMultiBsize, BLOCK_SIZE, 0, 0, 
 				(XFLOAT*)~micTransformer.fouriers,
 				(XFLOAT)1/((XFLOAT)(micTransformer.reals.getSize())),
 				micTransformer.fouriers.getSize()*2);
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
 		CTOC(timer,"FourierTransform_0");
 
 		if (basePckr->highpass > 0.)
@@ -533,20 +534,20 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 		// Also calculate the FFT of the squared micrograph
 		CTIC(timer,"SquareImic");
 
-		cuda_kernel_square<<<FMultiBsize,BLOCK_SIZE>>>(
+		hipLaunchKernelGGL(cuda_kernel_square, FMultiBsize, BLOCK_SIZE, 0, 0, 
 				~micTransformer.reals,
 				micTransformer.reals.getSize());
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
 		CTOC(timer,"SquareImic");
 
 		CTIC(timer,"FourierTransform_1");
 
 		micTransformer.forward();
-		CudaKernels::cuda_kernel_multi<XFLOAT><<<FMultiBsize,BLOCK_SIZE>>>(
+		hipLaunchKernelGGL(HIP_KERNEL_NAME(CudaKernels::cuda_kernel_multi<XFLOAT>), FMultiBsize, BLOCK_SIZE, 0, 0, 
 				(XFLOAT*)~micTransformer.fouriers,
 				(XFLOAT)1/((XFLOAT)(micTransformer.reals.getSize())),
 				micTransformer.fouriers.getSize()*2);
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
 		CTOC(timer,"FourierTransform_1");
 
 		// The following calculate mu and sig under the solvent area at every position in the micrograph
@@ -778,7 +779,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 	dim3 blocks((int)ceilf((float)FauxStride/(float)BLOCK_SIZE),1);
 	if(basePckr->do_ctf)
 	{
-		cuda_kernel_rotateAndCtf<<<blocks,BLOCK_SIZE>>>(
+		hipLaunchKernelGGL(cuda_kernel_rotateAndCtf, blocks, BLOCK_SIZE, 0, 0, 
 													  ~cudaTransformer1.fouriers,
 													  ~d_ctf,
 													  0,
@@ -788,14 +789,14 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 	}
 	else
 	{
-		cuda_kernel_rotateOnly<<<blocks,BLOCK_SIZE>>>(
+		hipLaunchKernelGGL(cuda_kernel_rotateOnly, blocks, BLOCK_SIZE, 0, 0, 
 													  ~cudaTransformer1.fouriers,
 													  0,
 													  projKernel,
 													  0
 												);
 	}
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 	CTOC(timer,"SingleProjection");
 #ifdef TIMING
 	basePckr->timer.toc(basePckr->TIMING_B4);
@@ -882,7 +883,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 				dim3 blocks((int)ceilf((float)FauxStride/(float)BLOCK_SIZE),cudaTransformer1.batchSize[psiIter]);
 				if(basePckr->do_ctf)
 				{
-					cuda_kernel_rotateAndCtf<<<blocks,BLOCK_SIZE>>>(
+					hipLaunchKernelGGL(cuda_kernel_rotateAndCtf, blocks, BLOCK_SIZE, 0, 0, 
 															  ~cudaTransformer1.fouriers,
 															  ~d_ctf,
 															  DEG2RAD(basePckr->psi_sampling),
@@ -892,29 +893,29 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 				}
 				else
 				{
-					cuda_kernel_rotateOnly<<<blocks,BLOCK_SIZE>>>(
+					hipLaunchKernelGGL(cuda_kernel_rotateOnly, blocks, BLOCK_SIZE, 0, 0, 
 															  ~cudaTransformer1.fouriers,
 															  DEG2RAD(basePckr->psi_sampling),
 															  projKernel,
 															  startPsi
 															);
 				}
-				LAUNCH_HANDLE_ERROR(cudaGetLastError());
+				LAUNCH_HANDLE_ERROR(hipGetLastError());
 				CTOC(timer,"Projection");
 
 				// Now multiply template and micrograph to calculate the cross-correlation
 				CTIC(timer,"convol");
 				dim3 blocks2( (int) ceilf(( float)FauxStride/(float)BLOCK_SIZE),cudaTransformer1.batchSize[psiIter]);
-				cuda_kernel_batch_convol_A<<<blocks2,BLOCK_SIZE>>>(
+				hipLaunchKernelGGL(cuda_kernel_batch_convol_A, blocks2, BLOCK_SIZE, 0, 0, 
 					~cudaTransformer1.fouriers,
 					~d_Fmic,
 					FauxStride);
-				LAUNCH_HANDLE_ERROR(cudaGetLastError());
+				LAUNCH_HANDLE_ERROR(hipGetLastError());
 				CTOC(timer,"convol");
 
 				CTIC(timer,"CudaInverseFourierTransform_1");
 				cudaTransformer1.backward();
-				HANDLE_ERROR(cudaDeviceSynchronize());
+				HANDLE_ERROR(hipDeviceSynchronize());
 				CTOC(timer,"CudaInverseFourierTransform_1");
 
 
@@ -931,9 +932,9 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 				// So now we already had precalculated: Mdiff2 = 1/sig*Sum(X^2) - 2/sig*Sum(X) + mu^2/sig*Sum(1)
 				// Still to do (per reference): - 2/sig*Sum(AX) + 2*mu/sig*Sum(A) + Sum(A^2)
 				CTIC(timer,"probRatio");
-				HANDLE_ERROR(cudaDeviceSynchronize());
+				HANDLE_ERROR(hipDeviceSynchronize());
 				dim3 PR_blocks(ceilf((float)(cudaTransformer1.reals.getSize()/cudaTransformer1.batchSize[psiIter])/(float)PROBRATIO_BLOCK_SIZE));
-				cuda_kernel_probRatio<<<PR_blocks,PROBRATIO_BLOCK_SIZE>>>(
+				hipLaunchKernelGGL(cuda_kernel_probRatio, PR_blocks, PROBRATIO_BLOCK_SIZE, 0, 0, 
 						~d_Mccf_best,
 						~d_Mpsi_best,
 						~cudaTransformer1.reals,
@@ -948,7 +949,7 @@ void AutoPickerCuda::autoPickOneMicrograph(FileName &fn_mic, long int imic)
 						startPsi,
 						Npsi
 						);
-				LAUNCH_HANDLE_ERROR(cudaGetLastError());
+				LAUNCH_HANDLE_ERROR(hipGetLastError());
 				startPsi += cudaTransformer1.batchSize[psiIter];
 				CTOC(timer,"probRatio");
 

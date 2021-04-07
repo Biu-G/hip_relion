@@ -1,7 +1,8 @@
+#include "hip/hip_runtime.h"
 #ifndef CUDA_DIFF2_KERNELS_CUH_
 #define CUDA_DIFF2_KERNELS_CUH_
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -214,7 +215,7 @@ __global__ void cuda_kernel_diff2_fine(
 	unsigned long tid = threadIdx.x;
 
 //    // Specialize BlockReduce for a 1D block of 128 threads on type XFLOAT
-//    typedef cub::BlockReduce<XFLOAT, 128> BlockReduce;
+//    typedef hipcub::BlockReduce<XFLOAT, 128> BlockReduce;
 //    // Allocate shared memory for BlockReduce
 //    __shared__ typename BlockReduce::TempStorage temp_storage;
 
@@ -486,7 +487,7 @@ __global__ void cuda_kernel_diff2_CC_fine(
 	int tid = threadIdx.x;
 
 //    // Specialize BlockReduce for a 1D block of 128 threads on type XFLOAT
-//    typedef cub::BlockReduce<XFLOAT, 128> BlockReduce;
+//    typedef hipcub::BlockReduce<XFLOAT, 128> BlockReduce;
 //    // Allocate shared memory for BlockReduce
 //    __shared__ typename BlockReduce::TempStorage temp_storage;
 

@@ -1,6 +1,7 @@
+#include "hip/hip_runtime.h"
 #include "src/gpu_utils/cuda_projector_plan.h"
 #include "src/time.h"
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 //#define PP_TIMING
 #ifdef PP_TIMING

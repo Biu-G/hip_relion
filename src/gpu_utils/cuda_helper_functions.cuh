@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef CUDA_HELPER_FUNCTIONS_CUH_
 #define CUDA_HELPER_FUNCTIONS_CUH_
 
@@ -17,7 +18,7 @@
 #include <iostream>
 #include "src/complex.h"
 #include <fstream>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include "src/parallel.h"
 #include <signal.h>
 
@@ -100,7 +101,7 @@ void runWavgKernel(
 		XFLOAT part_scale,
 		bool refs_are_ctf_corrected,
 		bool data_is_3D,
-		cudaStream_t stream);
+		hipStream_t stream);
 
 void runBackProjectKernel(
 		CudaBackprojector &BP,
@@ -123,7 +124,7 @@ void runBackProjectKernel(
 		unsigned long imageCount,
 		bool data_is_3D,
 		bool do_sgd,
-		cudaStream_t optStream);
+		hipStream_t optStream);
 
 #define INIT_VALUE_BLOCK_SIZE 512
 template< typename T>
@@ -169,7 +170,7 @@ void deviceInitValue(CudaGlobalPtr<T> &data, T value)
 			~data,
 			value,
 			data.getSize());
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 }
 
 template< typename T>
@@ -197,7 +198,7 @@ void mapAllWeightsToMweights(
 		XFLOAT * d_mweights, //Mweight
 		unsigned long orientation_num, //projectorPlan.orientation_num
 		unsigned long translation_num, //translation_num
-		cudaStream_t stream
+		hipStream_t stream
 		);
 
 #define OVER_THRESHOLD_BLOCK_SIZE 512
@@ -227,7 +228,7 @@ void arrayOverThreshold(CudaGlobalPtr<T> &data, CudaGlobalPtr<bool> &passed, T t
 			~passed,
 			threshold,
 			data.getSize());
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 }
 
 #define FIND_IN_CUMULATIVE_BLOCK_SIZE 512
@@ -259,7 +260,7 @@ void runDiff2KernelCoarse(
 		long unsigned orientation_num,
 		int translation_num,
 		int image_size,
-		cudaStream_t stream,
+		hipStream_t stream,
 		bool do_CC,
 		bool data_is_3D);
 
@@ -286,7 +287,7 @@ void runDiff2KernelFine(
 		unsigned image_size,
 		int ipart,
 		int exp_iclass,
-		cudaStream_t stream,
+		hipStream_t stream,
 		long unsigned job_num_count,
 		bool do_CC,
 		bool data_is_3D);
@@ -368,7 +369,7 @@ void windowFourierTransform2(
 		XFLOAT *d_out_imag,
 		unsigned iX, unsigned iY, unsigned iZ, //Input dimensions
 		unsigned oX, unsigned oY, unsigned oZ,  //Output dimensions
-		cudaStream_t stream = 0);
+		hipStream_t stream = 0);
 
 #define WINDOW_FT_BLOCK_SIZE 128
 template<bool check_max_r2>
@@ -422,7 +423,7 @@ void windowFourierTransform2(
 		size_t oX, size_t oY, size_t oZ,  //Output dimensions
 		size_t Npsi = 1,
 		size_t pos = 0,
-		cudaStream_t stream = 0);
+		hipStream_t stream = 0);
 
 
 void selfApplyBeamTilt2(MultidimArray<Complex > &Fimg, RFLOAT beamtilt_x, RFLOAT beamtilt_y,
@@ -487,17 +488,17 @@ void runCenterFFT(MultidimArray< T >& v, bool forward, CudaCustomAllocator *allo
 
 
 		dim3 dim(ceilf((float)(v.nzyxdim/(float)(2*CFTT_BLOCK_SIZE))));
-		cuda_kernel_centerFFT_2D<<<dim,CFTT_BLOCK_SIZE>>>(img_in.d_ptr,
+		hipLaunchKernelGGL(cuda_kernel_centerFFT_2D, dim, CFTT_BLOCK_SIZE, 0, 0, img_in.d_ptr,
 										  v.nzyxdim,
 										  XSIZE(v),
 										  YSIZE(v),
 										  xshift,
 										  yshift);
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
 
 		img_in.cp_to_host();
 
-//		HANDLE_ERROR(cudaStreamSynchronize(0));
+//		HANDLE_ERROR(hipStreamSynchronize(0));
 
 		for (unsigned i = 0; i < v.nzyxdim; i ++)
 			v.data[i] = (T) img_in[i];
@@ -631,9 +632,9 @@ void runCenterFFT( CudaGlobalPtr< T > &img_in,
 			ySize,
 			xshift,
 			yshift);
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 
-//	HANDLE_ERROR(cudaStreamSynchronize(0));
+//	HANDLE_ERROR(hipStreamSynchronize(0));
 //	img_aux.cp_on_device(img_in.d_ptr); //update input image with centered kernel-output.
 
 
@@ -673,9 +674,9 @@ void runCenterFFT( CudaGlobalPtr< T > &img_in,
 				xshift,
 				yshift,
 				zshift);
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
 
-		//	HANDLE_ERROR(cudaStreamSynchronize(0));
+		//	HANDLE_ERROR(hipStreamSynchronize(0));
 		//	img_aux.cp_on_device(img_in.d_ptr); //update input image with centered kernel-output.
 	}
 	else
@@ -697,7 +698,7 @@ void runCenterFFT( CudaGlobalPtr< T > &img_in,
 				ySize,
 				xshift,
 				yshift);
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
 	}
 }
 
@@ -757,7 +758,7 @@ void lowPassFilterMapGPU(
 						(XFLOAT)angpix,
 						Xdim*Ydim*Zdim);
 	}
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 }
 
 #endif //CUDA_HELPER_FUNCTIONS_CUH_

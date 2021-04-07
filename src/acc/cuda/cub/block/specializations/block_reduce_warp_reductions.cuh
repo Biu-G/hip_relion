@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::BlockReduceWarpReductions provides variants of warp-reduction-based parallel reduction across a CUDA thread block.  Supports non-commutative reduction operators.
+ * hipcub::BlockReduceWarpReductions provides variants of warp-reduction-based parallel reduction across a CUDA thread block.  Supports non-commutative reduction operators.
  */
 
 #pragma once
@@ -169,7 +169,7 @@ struct BlockReduceWarpReductions
         T                   input,          ///< [in] Calling thread's input partial reductions
         int                 num_valid)      ///< [in] Number of valid elements (may be less than BLOCK_THREADS)
     {
-        cub::Sum        reduction_op;
+        hipcub::Sum        reduction_op;
         unsigned int    warp_offset = warp_id * LOGICAL_WARP_SIZE;
         unsigned int    warp_num_valid = (FULL_TILE && EVEN_WARP_MULTIPLE) ?
                             LOGICAL_WARP_SIZE :
@@ -181,7 +181,7 @@ struct BlockReduceWarpReductions
         T warp_aggregate = WarpReduce(temp_storage.warp_reduce[warp_id]).template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE), 1>(
             input,
             warp_num_valid,
-            cub::Sum());
+            hipcub::Sum());
 
         // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
         return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);

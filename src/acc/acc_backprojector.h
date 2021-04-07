@@ -2,7 +2,7 @@
 #define ACC_BACKPROJECTOR_H_
 
 #ifdef CUDA
-#  include <cuda_runtime.h>
+#  include <hip/hip_runtime.h>
 #endif
 #include "src/complex.h"
 #include "src/acc/settings.h"
@@ -31,7 +31,7 @@ public:
 
 	XFLOAT *d_mdlReal, *d_mdlImag, *d_mdlWeight;
 
-	cudaStream_t stream;
+	hipStream_t stream;
 
 public:
 
@@ -73,13 +73,13 @@ public:
 			int imgZ,
 			unsigned long imageCount,
 			bool data_is_3D,
-			cudaStream_t optStream);
+			hipStream_t optStream);
 
 	void getMdlData(XFLOAT *real, XFLOAT *imag, XFLOAT * weights);
 	void getMdlDataPtrs(XFLOAT *& real, XFLOAT *& imag, XFLOAT *& weights);
 
-	void setStream(cudaStream_t s) { stream = s; }
-	cudaStream_t getStream() { return stream; }
+	void setStream(hipStream_t s) { stream = s; }
+	hipStream_t getStream() { return stream; }
 
 	void clear();
 

@@ -40,7 +40,7 @@ public:
 	std::vector< AccProjector > projectors;
 
    //Class streams ( for concurrent scheduling of class-specific kernels)
-	std::vector< cudaStream_t > classStreams;
+	std::vector< hipStream_t > classStreams;
 
 	int device_id;
 
@@ -71,7 +71,7 @@ public:
 	~AutoPickerCuda()
 	{
 		for (int i = 0; i < classStreams.size(); i++)
-			HANDLE_ERROR(cudaStreamDestroy(classStreams[i]));
+			HANDLE_ERROR(hipStreamDestroy(classStreams[i]));
 	}
 
 //private:

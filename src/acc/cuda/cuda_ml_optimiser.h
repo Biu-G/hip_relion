@@ -10,7 +10,7 @@
 #include "src/acc/cuda/cuda_fft.h"
 #include "src/acc/cuda/cuda_benchmark_utils.h"
 #include <stack>
-//#include <cufft.h>
+//#include <hipfft.h>
 
 #include "src/acc/acc_ml_optimiser.h"
 #include "src/acc/acc_ptr.h"
@@ -60,7 +60,7 @@ public:
 
 	void syncAllBackprojects()
 	{
-		DEBUG_HANDLE_ERROR(cudaDeviceSynchronize());
+		DEBUG_HANDLE_ERROR(hipDeviceSynchronize());
 	}
 
 
@@ -71,8 +71,8 @@ public:
 		coarseProjectionPlans.clear();
 		//Delete this lastly
 		delete allocator;
-		HANDLE_ERROR(cudaSetDevice(device_id));
-		HANDLE_ERROR(cudaDeviceReset());
+		HANDLE_ERROR(hipSetDevice(device_id));
+		HANDLE_ERROR(hipDeviceReset());
 	}
 
 };
@@ -83,8 +83,8 @@ public:
 	FourierTransformer transformer;
 
    //Class streams ( for concurrent scheduling of class-specific kernels)
-	std::vector< cudaStream_t > classStreams;
-	cudaError_t errorStatus;
+	std::vector< hipStream_t > classStreams;
+	hipError_t errorStatus;
 
 	CudaFFT transformer1;
 	CudaFFT transformer2;
@@ -120,7 +120,7 @@ public:
 #ifdef TIMING_FILES
 			timer(timing_fnm),
 #endif
-			errorStatus((cudaError_t)0),
+			errorStatus((hipError_t)0),
 			allocator(bundle->allocator),
 			generateProjectionPlanOnTheFly(bundle->generateProjectionPlanOnTheFly)
 	{};
@@ -133,7 +133,7 @@ public:
 	{
 		for (int i = 0; i < classStreams.size(); i++)
 			if (classStreams[i] != NULL)
-				HANDLE_ERROR(cudaStreamDestroy(classStreams[i]));
+				HANDLE_ERROR(hipStreamDestroy(classStreams[i]));
 	}
 
 	CudaCustomAllocator *getAllocator()	

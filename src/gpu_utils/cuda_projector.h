@@ -4,7 +4,7 @@
 #include "src/complex.h"
 #include "src/gpu_utils/cuda_settings.h"
 #include "src/gpu_utils/cuda_mem_utils.h"
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 class CudaProjector
 {
@@ -20,12 +20,12 @@ class CudaProjector
 
 #if(COMPLEXTEXTURE)
 	XFLOAT *texArrayComplex2D;
-	cudaArray_t *texArrayComplex;
-	cudaTextureObject_t *mdlComplex;
+	hipArray_t *texArrayComplex;
+	hipTextureObject_t *mdlComplex;
 #else
 	XFLOAT *texArrayReal2D, *texArrayImag2D;
-	cudaArray_t *texArrayReal, *texArrayImag;
-	cudaTextureObject_t *mdlReal, *mdlImag;
+	hipArray_t *texArrayReal, *texArrayImag;
+	hipTextureObject_t *mdlReal, *mdlImag;
 #endif
 
 	size_t pitch2D;

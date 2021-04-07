@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::BlockScanWarpscans provides warpscan-based variants of parallel prefix scan across a CUDA thread block.
+ * hipcub::BlockScanWarpscans provides warpscan-based variants of parallel prefix scan across a CUDA thread block.
  */
 
 #pragma once

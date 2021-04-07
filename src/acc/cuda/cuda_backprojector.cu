@@ -1,5 +1,5 @@
 #include <signal.h>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include "src/acc/cuda/cuda_settings.h"
 #include "src/acc/acc_backprojector.h"
 #include "src/acc/acc_projector.h"

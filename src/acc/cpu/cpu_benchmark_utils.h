@@ -12,7 +12,7 @@ namespace CpuKernels
 {
 //Non-concurrent benchmarking tools (only for Linux)
 /*
-//#include <cuda_runtime.h>
+//#include <hip/hip_runtime.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -51,8 +51,8 @@ std::vector<clock_t>     cuda_cpu_benchmark_start_times;
 FILE *cuda_cpu_benchmark_fPtr;
 
 std::vector<std::string> cuda_gpu_benchmark_identifiers;
-std::vector<cudaEvent_t> cuda_gpu_benchmark_start_times;
-std::vector<cudaEvent_t> cuda_gpu_benchmark_stop_times;
+std::vector<hipEvent_t> cuda_gpu_benchmark_start_times;
+std::vector<hipEvent_t> cuda_gpu_benchmark_stop_times;
 FILE *cuda_gpu_benchmark_fPtr;
 
 relion_timer(std::string fnm)

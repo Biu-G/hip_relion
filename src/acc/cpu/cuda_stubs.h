@@ -2,7 +2,7 @@
 #define CUDA_STUBS_H
 
 #undef CUDA
-typedef float cudaStream_t;
+typedef float hipStream_t;
 typedef double CudaCustomAllocator;
 typedef int dim3;
 #define cudaStreamPerThread 0

@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::AgentSpmv implements a stateful abstraction of CUDA thread blocks for participating in device-wide SpMV.
+ * hipcub::AgentSpmv implements a stateful abstraction of CUDA thread blocks for participating in device-wide SpMV.
  */
 
 #pragma once
@@ -176,7 +176,7 @@ struct AgentSpmv
     typedef KeyValuePair<OffsetT, ValueT> KeyValuePairT;
 
     // Reduce-value-by-segment scan operator
-    typedef ReduceBySegmentOp<cub::Sum> ReduceBySegmentOpT;
+    typedef ReduceBySegmentOp<hipcub::Sum> ReduceBySegmentOpT;
 
     // Prefix functor type
     typedef BlockScanRunningPrefixOp<KeyValuePairT, ReduceBySegmentOpT> PrefixOpT;

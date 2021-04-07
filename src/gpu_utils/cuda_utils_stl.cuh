@@ -1,7 +1,7 @@
 #ifndef CUDA_UTILS_STL_CUH_
 #define CUDA_UTILS_STL_CUH_
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include "src/gpu_utils/cuda_settings.h"
 #include "src/gpu_utils/cuda_mem_utils.h"
 #include <stdio.h>
@@ -23,7 +23,7 @@ if (ptr.getAllocator() == NULL)
 	printf("DEBUG_ERROR: getMaxOnDevice called with null allocator.\n");
 #endif
 	ptr.cp_to_host();
-	DEBUG_HANDLE_ERROR(cudaStreamSynchronize(0));
+	DEBUG_HANDLE_ERROR(hipStreamSynchronize(0));
 	return (T)*std::max_element(ptr.h_ptr,ptr.h_ptr + ptr.size);
 }
 
@@ -40,7 +40,7 @@ if (ptr.getAllocator() == NULL)
 #endif
 	std::pair<int, T> max_pair;
 	ptr.cp_to_host();
-	DEBUG_HANDLE_ERROR(cudaStreamSynchronize(0));
+	DEBUG_HANDLE_ERROR(hipStreamSynchronize(0));
 	max_pair.first  = std::distance(ptr.h_ptr,std::max_element(ptr.h_ptr,ptr.h_ptr + ptr.size));
 	max_pair.second = ptr.h_ptr[max_pair.first];
 
@@ -59,7 +59,7 @@ if (ptr.getAllocator() == NULL)
 	printf("DEBUG_ERROR: getMinOnDevice called with null allocator.\n");
 #endif
 	ptr.cp_to_host();
-	DEBUG_HANDLE_ERROR(cudaStreamSynchronize(0));
+	DEBUG_HANDLE_ERROR(hipStreamSynchronize(0));
 	return (T)*std::min_element(ptr.h_ptr,ptr.h_ptr + ptr.size);
 }
 
@@ -77,7 +77,7 @@ if (ptr.getAllocator() == NULL)
 #endif
 	std::pair<int, T> min_pair;
 	ptr.cp_to_host();
-	DEBUG_HANDLE_ERROR(cudaStreamSynchronize(0));
+	DEBUG_HANDLE_ERROR(hipStreamSynchronize(0));
 	min_pair.first  = std::distance(ptr.h_ptr,std::min_element(ptr.h_ptr,ptr.h_ptr + ptr.size));
 	min_pair.second = ptr.h_ptr[min_pair.first];
 
@@ -96,7 +96,7 @@ if (ptr.getAllocator() == NULL)
 	printf("DEBUG_ERROR: getSumOnDevice called with null allocator.\n");
 #endif
 	ptr.cp_to_host();
-	DEBUG_HANDLE_ERROR(cudaStreamSynchronize(0));
+	DEBUG_HANDLE_ERROR(hipStreamSynchronize(0));
 	T sum(0);
 	for(long int i =0; i<ptr.size; i++)
 		sum+=ptr.h_ptr[i];
@@ -115,12 +115,12 @@ if (in.getAllocator() == NULL)
 	printf("DEBUG_ERROR: sortOnDevice called with null allocator.\n");
 #endif
 	in.cp_to_host();
-	DEBUG_HANDLE_ERROR(cudaStreamSynchronize(0));
+	DEBUG_HANDLE_ERROR(hipStreamSynchronize(0));
 	std::sort(in.h_ptr,in.h_ptr + in.size);
 	for(long int i =0; i<in.size; i++)
 		out.h_ptr[i]=in.h_ptr[i];
 	out.cp_to_device();
-	DEBUG_HANDLE_ERROR(cudaStreamSynchronize(0));
+	DEBUG_HANDLE_ERROR(hipStreamSynchronize(0));
 }
 
 #endif

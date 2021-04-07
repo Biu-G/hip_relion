@@ -1,10 +1,11 @@
+#include "hip/hip_runtime.h"
 #include "src/acc/settings.h"
 #include "src/acc/cuda/cuda_kernels/cuda_device_utils.cuh"
 #include "src/acc/cuda/cuda_kernels/helper.cuh"
 #include "src/acc/cuda/cuda_settings.h"
 
-#include <curand.h>
-#include <curand_kernel.h>
+#include <hiprand.h>
+#include <hiprand_kernel.h>
 
 /// Needed explicit template instantiations
 template __global__ void cuda_kernel_make_eulers_2D<true>(XFLOAT *,
@@ -76,7 +77,7 @@ __global__ void cuda_kernel_exponentiate_weights_fine(
 	}
 }
 
-__global__ void cuda_kernel_initRND(unsigned long seed, curandState *States)
+__global__ void cuda_kernel_initRND(unsigned long seed, hiprandState *States)
 {
        int tid = threadIdx.x;
        int bid = blockIdx.x;
@@ -84,11 +85,11 @@ __global__ void cuda_kernel_initRND(unsigned long seed, curandState *States)
        int id    = bid*RND_BLOCK_SIZE + tid;
        int pixel = bid*RND_BLOCK_SIZE + tid;
 
-       curand_init(seed, pixel, 0, &States[id]);
+       hiprand_init(seed, pixel, 0, &States[id]);
 }
 
 __global__ void cuda_kernel_RNDnormalDitributionComplexWithPowerModulation2D( ACCCOMPLEX *Image,
-																		    curandState *States,
+																		    hiprandState *States,
 																		    long int xdim,
 																			XFLOAT * spectra)
 {
@@ -98,7 +99,7 @@ __global__ void cuda_kernel_RNDnormalDitributionComplexWithPowerModulation2D( AC
        int id    = bid*RND_BLOCK_SIZE + tid;
        int pixel = bid*RND_BLOCK_SIZE + tid;
 
-       //curand_init(1234, pixel, 0, &States[id]);
+       //hiprand_init(1234, pixel, 0, &States[id]);
 
        int x,y;
        int size = xdim*((xdim-1)*2);   					//assuming square input images (particles)
@@ -120,20 +121,20 @@ __global__ void cuda_kernel_RNDnormalDitributionComplexWithPowerModulation2D( AC
                        if(ires<xdim)
                                scale =  spectra[ires];
 
-                       Image[pixel] = (curand_normal2_double(&States[id]))*scale;
+                       Image[pixel] = (hiprand_normal2_double(&States[id]))*scale;
 #else
                        XFLOAT scale = 0.f;
                        if(ires<xdim)
                                scale =  spectra[ires];
 
-                       Image[pixel] = (curand_normal2(&States[id]))*scale;
+                       Image[pixel] = (hiprand_normal2(&States[id]))*scale;
 #endif
                }
                pixel += RND_BLOCK_NUM*RND_BLOCK_SIZE;
        }
 }
 __global__ void cuda_kernel_RNDnormalDitributionComplexWithPowerModulation3D( ACCCOMPLEX *Image,
-																		    curandState *States,
+																		    hiprandState *States,
 																		    long int xdim,
                                                                             long int ydim,
 																			XFLOAT * spectra)
@@ -144,7 +145,7 @@ __global__ void cuda_kernel_RNDnormalDitributionComplexWithPowerModulation3D( AC
        int id    = bid*RND_BLOCK_SIZE + tid;
        int pixel = bid*RND_BLOCK_SIZE + tid;
 
-       //curand_init(1234, pixel, 0, &States[id]);
+       //hiprand_init(1234, pixel, 0, &States[id]);
 
        int x,y,z,xydim(xdim*ydim);
        int size = xdim*((xdim-1)*2)*((xdim-1)*2);   		//assuming square input images (particles)
@@ -169,13 +170,13 @@ __global__ void cuda_kernel_RNDnormalDitributionComplexWithPowerModulation3D( AC
                        if(ires<xdim)
                                scale =  spectra[ires];
 
-                       Image[pixel] = (curand_normal2_double(&States[id]))*scale;
+                       Image[pixel] = (hiprand_normal2_double(&States[id]))*scale;
 #else
                        XFLOAT scale = 0.f;
                        if(ires<xdim)
                                scale =  spectra[ires];
 
-                       Image[pixel] = (curand_normal2(&States[id]))*scale;
+                       Image[pixel] = (hiprand_normal2(&States[id]))*scale;
 #endif
                }
                pixel += RND_BLOCK_NUM*RND_BLOCK_SIZE;

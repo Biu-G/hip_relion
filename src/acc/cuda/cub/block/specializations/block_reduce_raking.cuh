@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::BlockReduceRaking provides raking-based methods of parallel reduction across a CUDA thread block.  Supports non-commutative reduction operators.
+ * hipcub::BlockReduceRaking provides raking-based methods of parallel reduction across a CUDA thread block.  Supports non-commutative reduction operators.
  */
 
 #pragma once
@@ -208,7 +208,7 @@ struct BlockReduceRaking
         T                   partial,            ///< [in] Calling thread's input partial reductions
         int                 num_valid)          ///< [in] Number of valid elements (may be less than BLOCK_THREADS)
     {
-        cub::Sum reduction_op;
+        hipcub::Sum reduction_op;
 
         return Reduce<IS_FULL_TILE>(partial, num_valid, reduction_op);
     }

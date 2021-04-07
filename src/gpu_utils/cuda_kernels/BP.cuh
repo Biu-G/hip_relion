@@ -1,7 +1,8 @@
+#include "hip/hip_runtime.h"
 #ifndef CUDA_BP_KERNELS_CUH_
 #define CUDA_BP_KERNELS_CUH_
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include <vector>
 #include <iostream>
 #include <fstream>

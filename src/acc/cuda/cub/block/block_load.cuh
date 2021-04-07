@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2017, NVIDIA CORPORATION.  All rights reserved.
@@ -214,7 +215,7 @@ __device__ __forceinline__ void InternalLoadDirectBlockedVectorized(
  *
  * The input offset (\p block_ptr + \p block_offset) must be quad-item aligned
  *
- * The following conditions will prevent vectorization and loading will fall back to cub::BLOCK_LOAD_DIRECT:
+ * The following conditions will prevent vectorization and loading will fall back to hipcub::BLOCK_LOAD_DIRECT:
  *   - \p ITEMS_PER_THREAD is odd
  *   - The data type \p T is not a built-in primitive or CUDA vector type (e.g., \p short, \p int2, \p double, \p float2, etc.)
  *
@@ -464,11 +465,11 @@ __device__ __forceinline__ void LoadDirectWarpStriped(
 //-----------------------------------------------------------------------------
 
 /**
- * \brief cub::BlockLoadAlgorithm enumerates alternative algorithms for cub::BlockLoad to read a linear segment of data from memory into a blocked arrangement across a CUDA thread block.
+ * \brief hipcub::BlockLoadAlgorithm enumerates alternative algorithms for hipcub::BlockLoad to read a linear segment of data from memory into a blocked arrangement across a CUDA thread block.
  */
 
 /**
- * \brief cub::BlockLoadAlgorithm enumerates alternative algorithms for cub::BlockLoad to read a linear segment of data from memory into a blocked arrangement across a CUDA thread block.
+ * \brief hipcub::BlockLoadAlgorithm enumerates alternative algorithms for hipcub::BlockLoad to read a linear segment of data from memory into a blocked arrangement across a CUDA thread block.
  */
 enum BlockLoadAlgorithm
 {
@@ -496,7 +497,7 @@ enum BlockLoadAlgorithm
      * - The utilization of memory transactions (coalescing) remains high until the the
      *   access stride between threads (i.e., the number items per thread) exceeds the
      *   maximum vector load width (typically 4 items or 64B, whichever is lower).
-     * - The following conditions will prevent vectorization and loading will fall back to cub::BLOCK_LOAD_DIRECT:
+     * - The following conditions will prevent vectorization and loading will fall back to hipcub::BLOCK_LOAD_DIRECT:
      *   - \p ITEMS_PER_THREAD is odd
      *   - The \p InputIteratorTis not a simple pointer type
      *   - The block input offset is not quadword-aligned
@@ -515,7 +516,7 @@ enum BlockLoadAlgorithm
      * - The utilization of memory transactions (coalescing) remains high regardless
      *   of items loaded per thread.
      * - The local reordering incurs slightly longer latencies and throughput than the
-     *   direct cub::BLOCK_LOAD_DIRECT and cub::BLOCK_LOAD_VECTORIZE alternatives.
+     *   direct hipcub::BLOCK_LOAD_DIRECT and hipcub::BLOCK_LOAD_VECTORIZE alternatives.
      */
     BLOCK_LOAD_TRANSPOSE,
 
@@ -534,7 +535,7 @@ enum BlockLoadAlgorithm
      * - The utilization of memory transactions (coalescing) remains high regardless
      *   of items loaded per thread.
      * - The local reordering incurs slightly larger latencies than the
-     *   direct cub::BLOCK_LOAD_DIRECT and cub::BLOCK_LOAD_VECTORIZE alternatives.
+     *   direct hipcub::BLOCK_LOAD_DIRECT and hipcub::BLOCK_LOAD_VECTORIZE alternatives.
      * - Provisions more shared storage, but incurs smaller latencies than the
      *   BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED alternative.
      */
@@ -571,7 +572,7 @@ enum BlockLoadAlgorithm
  * \tparam InputT               The data type to read into (which must be convertible from the input iterator's value type).
  * \tparam BLOCK_DIM_X          The thread block length in threads along the X dimension
  * \tparam ITEMS_PER_THREAD     The number of consecutive items partitioned onto each thread.
- * \tparam ALGORITHM            <b>[optional]</b> cub::BlockLoadAlgorithm tuning policy.  default: cub::BLOCK_LOAD_DIRECT.
+ * \tparam ALGORITHM            <b>[optional]</b> hipcub::BlockLoadAlgorithm tuning policy.  default: hipcub::BLOCK_LOAD_DIRECT.
  * \tparam WARP_TIME_SLICING    <b>[optional]</b> Whether or not only one warp's worth of shared memory should be allocated and time-sliced among block-warps during any load-related data transpositions (versus each warp having its own storage). (default: false)
  * \tparam BLOCK_DIM_Y          <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
  * \tparam BLOCK_DIM_Z          <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
@@ -579,23 +580,23 @@ enum BlockLoadAlgorithm
  *
  * \par Overview
  * - The BlockLoad class provides a single data movement abstraction that can be specialized
- *   to implement different cub::BlockLoadAlgorithm strategies.  This facilitates different
+ *   to implement different hipcub::BlockLoadAlgorithm strategies.  This facilitates different
  *   performance policies for different architectures, data types, granularity sizes, etc.
  * - BlockLoad can be optionally specialized by different data movement strategies:
- *   -# <b>cub::BLOCK_LOAD_DIRECT</b>.  A [<em>blocked arrangement</em>](index.html#sec5sec3)
- *      of data is read directly from memory.  [More...](\ref cub::BlockLoadAlgorithm)
- *   -# <b>cub::BLOCK_LOAD_VECTORIZE</b>.  A [<em>blocked arrangement</em>](index.html#sec5sec3)
+ *   -# <b>hipcub::BLOCK_LOAD_DIRECT</b>.  A [<em>blocked arrangement</em>](index.html#sec5sec3)
+ *      of data is read directly from memory.  [More...](\ref hipcub::BlockLoadAlgorithm)
+ *   -# <b>hipcub::BLOCK_LOAD_VECTORIZE</b>.  A [<em>blocked arrangement</em>](index.html#sec5sec3)
  *      of data is read directly from memory using CUDA's built-in vectorized loads as a
- *      coalescing optimization.    [More...](\ref cub::BlockLoadAlgorithm)
- *   -# <b>cub::BLOCK_LOAD_TRANSPOSE</b>.  A [<em>striped arrangement</em>](index.html#sec5sec3)
+ *      coalescing optimization.    [More...](\ref hipcub::BlockLoadAlgorithm)
+ *   -# <b>hipcub::BLOCK_LOAD_TRANSPOSE</b>.  A [<em>striped arrangement</em>](index.html#sec5sec3)
  *      of data is read directly from memory and is then locally transposed into a
- *      [<em>blocked arrangement</em>](index.html#sec5sec3).  [More...](\ref cub::BlockLoadAlgorithm)
- *   -# <b>cub::BLOCK_LOAD_WARP_TRANSPOSE</b>.  A [<em>warp-striped arrangement</em>](index.html#sec5sec3)
+ *      [<em>blocked arrangement</em>](index.html#sec5sec3).  [More...](\ref hipcub::BlockLoadAlgorithm)
+ *   -# <b>hipcub::BLOCK_LOAD_WARP_TRANSPOSE</b>.  A [<em>warp-striped arrangement</em>](index.html#sec5sec3)
  *      of data is read directly from memory and is then locally transposed into a
- *      [<em>blocked arrangement</em>](index.html#sec5sec3).  [More...](\ref cub::BlockLoadAlgorithm)
- *   -# <b>cub::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED,</b>.  A [<em>warp-striped arrangement</em>](index.html#sec5sec3)
+ *      [<em>blocked arrangement</em>](index.html#sec5sec3).  [More...](\ref hipcub::BlockLoadAlgorithm)
+ *   -# <b>hipcub::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED,</b>.  A [<em>warp-striped arrangement</em>](index.html#sec5sec3)
  *      of data is read directly from memory and is then locally transposed into a
- *      [<em>blocked arrangement</em>](index.html#sec5sec3) one warp at a time.  [More...](\ref cub::BlockLoadAlgorithm)
+ *      [<em>blocked arrangement</em>](index.html#sec5sec3) one warp at a time.  [More...](\ref hipcub::BlockLoadAlgorithm)
  * - \rowmajor
  *
  * \par A Simple Example
@@ -608,12 +609,12 @@ enum BlockLoadAlgorithm
  * pattern (after which items are locally reordered among threads).
  * \par
  * \code
- * #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
+ * #include <hipcub/hipcub.hpp>   // or equivalently <cub/block/block_load.cuh>
  *
  * __global__ void ExampleKernel(int *d_data, ...)
  * {
  *     // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
- *     typedef cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
+ *     typedef hipcub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
  *
  *     // Allocate shared memory for BlockLoad
  *     __shared__ typename BlockLoad::TempStorage temp_storage;
@@ -1132,12 +1133,12 @@ public:
      * pattern (after which items are locally reordered among threads).
      * \par
      * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
+     * #include <hipcub/hipcub.hpp>   // or equivalently <cub/block/block_load.cuh>
      *
      * __global__ void ExampleKernel(int *d_data, ...)
      * {
      *     // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
-     *     typedef cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
+     *     typedef hipcub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
      *
      *     // Allocate shared memory for BlockLoad
      *     __shared__ typename BlockLoad::TempStorage temp_storage;
@@ -1177,12 +1178,12 @@ public:
      * pattern (after which items are locally reordered among threads).
      * \par
      * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
+     * #include <hipcub/hipcub.hpp>   // or equivalently <cub/block/block_load.cuh>
      *
      * __global__ void ExampleKernel(int *d_data, int valid_items, ...)
      * {
      *     // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
-     *     typedef cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
+     *     typedef hipcub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
      *
      *     // Allocate shared memory for BlockLoad
      *     __shared__ typename BlockLoad::TempStorage temp_storage;
@@ -1224,12 +1225,12 @@ public:
      * pattern (after which items are locally reordered among threads).
      * \par
      * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
+     * #include <hipcub/hipcub.hpp>   // or equivalently <cub/block/block_load.cuh>
      *
      * __global__ void ExampleKernel(int *d_data, int valid_items, ...)
      * {
      *     // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
-     *     typedef cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
+     *     typedef hipcub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE> BlockLoad;
      *
      *     // Allocate shared memory for BlockLoad
      *     __shared__ typename BlockLoad::TempStorage temp_storage;

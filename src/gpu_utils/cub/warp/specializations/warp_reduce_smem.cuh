@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned across a CUDA thread warp.
+ * hipcub::WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned across a CUDA thread warp.
  */
 
 #pragma once

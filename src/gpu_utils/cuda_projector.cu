@@ -34,39 +34,39 @@ bool CudaProjector::setMdlDim(
 
 #ifndef CUDA_NO_TEXTURES
 #if(COMPLEXTEXTURE)
-	mdlComplex = new cudaTextureObject_t();
+	mdlComplex = new hipTextureObject_t();
 
 	// create channel to describe data type (bits,bits,bits,bits,type)
-	cudaChannelFormatDesc desc;
+	hipChannelFormatDesc desc;
 
-	desc = cudaCreateChannelDesc(32, 32, 0, 0, cudaChannelFormatKindFloat);
+	desc = hipCreateChannelDesc(32, 32, 0, 0, hipChannelFormatKindFloat);
 
-	struct cudaResourceDesc resDesc_complex;
-	struct cudaTextureDesc  texDesc;
+	struct hipResourceDesc resDesc_complex;
+	struct hipTextureDesc  texDesc;
 	// -- Zero all data in objects handlers
-	memset(&resDesc_complex, 0, sizeof(cudaResourceDesc));
-	memset(&texDesc, 0, sizeof(cudaTextureDesc));
+	memset(&resDesc_complex, 0, sizeof(hipResourceDesc));
+	memset(&texDesc, 0, sizeof(hipTextureDesc));
 
 	if(mdlZ!=0)  // 3D model
 	{
-		texArrayComplex = new cudaArray_t();
+		texArrayComplex = new hipArray_t();
 
 		// -- make extents for automatic pitch:ing (aligment) of allocated 3D arrays
-		cudaExtent volumeSize = make_cudaExtent(mdlX, mdlY, mdlZ);
+		hipExtent volumeSize = make_hipExtent(mdlX, mdlY, mdlZ);
 
 		// -- Allocate and copy data using very celver CUDA memcpy-functions
-		HANDLE_ERROR(cudaMalloc3DArray(texArrayComplex, &desc, volumeSize));
+		HANDLE_ERROR(hipMalloc3DArray(texArrayComplex, &desc, volumeSize));
 
 		// -- Descriptors of the channel(s) in the texture(s)
 		resDesc_complex.res.array.array = *texArrayComplex;
-		resDesc_complex.resType = cudaResourceTypeArray;
+		resDesc_complex.resType = hipResourceTypeArray;
 	}
 	else // 2D model
 	{
-		HANDLE_ERROR(cudaMallocPitch(&texArrayComplex2D, &pitch2D, sizeof(CUDACOMPLEX)*mdlX,mdlY));
+		HANDLE_ERROR(hipMallocPitch(&texArrayComplex2D, &pitch2D, sizeof(CUDACOMPLEX)*mdlX,mdlY));
 
 		// -- Descriptors of the channel(s) in the texture(s)
-		resDesc_complex.resType = cudaResourceTypePitch2D;
+		resDesc_complex.resType = hipResourceTypePitch2D;
 		resDesc_complex.res.pitch2D.devPtr = texArrayComplex2D;
 		resDesc_complex.res.pitch2D.pitchInBytes =  pitch2D;
 		resDesc_complex.res.pitch2D.width = mdlX;
@@ -75,66 +75,66 @@ bool CudaProjector::setMdlDim(
 	}
 
 	// -- Decriptors of the texture(s) and methods used for reading it(them) --
-	texDesc.filterMode       = cudaFilterModeLinear;
-	texDesc.readMode         = cudaReadModeElementType;
+	texDesc.filterMode       = hipFilterModeLinear;
+	texDesc.readMode         = hipReadModeElementType;
 	texDesc.normalizedCoords = false;
 
 	for(int n=0; n<3; n++)
-		texDesc.addressMode[n]=cudaAddressModeClamp;
+		texDesc.addressMode[n]=hipAddressModeClamp;
 
 	// -- Create texture object(s)
-	HANDLE_ERROR(cudaCreateTextureObject(mdlComplex, &resDesc_complex, &texDesc, NULL));
+	HANDLE_ERROR(hipCreateTextureObject(mdlComplex, &resDesc_complex, &texDesc, NULL));
 
 #else
 
-	mdlReal = new cudaTextureObject_t();
-	mdlImag = new cudaTextureObject_t();
+	mdlReal = new hipTextureObject_t();
+	mdlImag = new hipTextureObject_t();
 
 	// create channel to describe data type (bits,bits,bits,bits,type)
-	cudaChannelFormatDesc desc;
+	hipChannelFormatDesc desc;
 
-	desc = cudaCreateChannelDesc(32, 0, 0, 0, cudaChannelFormatKindFloat);
+	desc = hipCreateChannelDesc(32, 0, 0, 0, hipChannelFormatKindFloat);
 
-	struct cudaResourceDesc resDesc_real, resDesc_imag;
-	struct cudaTextureDesc  texDesc;
+	struct hipResourceDesc resDesc_real, resDesc_imag;
+	struct hipTextureDesc  texDesc;
 	// -- Zero all data in objects handlers
-	memset(&resDesc_real, 0, sizeof(cudaResourceDesc));
-	memset(&resDesc_imag, 0, sizeof(cudaResourceDesc));
-	memset(&texDesc, 0, sizeof(cudaTextureDesc));
+	memset(&resDesc_real, 0, sizeof(hipResourceDesc));
+	memset(&resDesc_imag, 0, sizeof(hipResourceDesc));
+	memset(&texDesc, 0, sizeof(hipTextureDesc));
 
 	if(mdlZ!=0)  // 3D model
 	{
-		texArrayReal = new cudaArray_t();
-		texArrayImag = new cudaArray_t();
+		texArrayReal = new hipArray_t();
+		texArrayImag = new hipArray_t();
 
 		// -- make extents for automatic pitch:ing (aligment) of allocated 3D arrays
-		cudaExtent volumeSize = make_cudaExtent(mdlX, mdlY, mdlZ);
+		hipExtent volumeSize = make_hipExtent(mdlX, mdlY, mdlZ);
 
 
 		// -- Allocate and copy data using very clever CUDA memcpy-functions
-		HANDLE_ERROR(cudaMalloc3DArray(texArrayReal, &desc, volumeSize));
-		HANDLE_ERROR(cudaMalloc3DArray(texArrayImag, &desc, volumeSize));
+		HANDLE_ERROR(hipMalloc3DArray(texArrayReal, &desc, volumeSize));
+		HANDLE_ERROR(hipMalloc3DArray(texArrayImag, &desc, volumeSize));
 
 		// -- Descriptors of the channel(s) in the texture(s)
 		resDesc_real.res.array.array = *texArrayReal;
 		resDesc_imag.res.array.array = *texArrayImag;
-		resDesc_real.resType = cudaResourceTypeArray;
-		resDesc_imag.resType = cudaResourceTypeArray;
+		resDesc_real.resType = hipResourceTypeArray;
+		resDesc_imag.resType = hipResourceTypeArray;
 	}
 	else // 2D model
 	{
-		HANDLE_ERROR(cudaMallocPitch(&texArrayReal2D, &pitch2D, sizeof(XFLOAT)*mdlX,mdlY));
-		HANDLE_ERROR(cudaMallocPitch(&texArrayImag2D, &pitch2D, sizeof(XFLOAT)*mdlX,mdlY));
+		HANDLE_ERROR(hipMallocPitch(&texArrayReal2D, &pitch2D, sizeof(XFLOAT)*mdlX,mdlY));
+		HANDLE_ERROR(hipMallocPitch(&texArrayImag2D, &pitch2D, sizeof(XFLOAT)*mdlX,mdlY));
 
 		// -- Descriptors of the channel(s) in the texture(s)
-		resDesc_real.resType = cudaResourceTypePitch2D;
+		resDesc_real.resType = hipResourceTypePitch2D;
 		resDesc_real.res.pitch2D.devPtr = texArrayReal2D;
 		resDesc_real.res.pitch2D.pitchInBytes =  pitch2D;
 		resDesc_real.res.pitch2D.width = mdlX;
 		resDesc_real.res.pitch2D.height = mdlY;
 		resDesc_real.res.pitch2D.desc = desc;
 		// -------------------------------------------------
-		resDesc_imag.resType = cudaResourceTypePitch2D;
+		resDesc_imag.resType = hipResourceTypePitch2D;
 		resDesc_imag.res.pitch2D.devPtr = texArrayImag2D;
 		resDesc_imag.res.pitch2D.pitchInBytes =  pitch2D;
 		resDesc_imag.res.pitch2D.width = mdlX;
@@ -143,20 +143,20 @@ bool CudaProjector::setMdlDim(
 	}
 
 	// -- Decriptors of the texture(s) and methods used for reading it(them) --
-	texDesc.filterMode       = cudaFilterModeLinear;
-	texDesc.readMode         = cudaReadModeElementType;
+	texDesc.filterMode       = hipFilterModeLinear;
+	texDesc.readMode         = hipReadModeElementType;
 	texDesc.normalizedCoords = false;
 
 	for(int n=0; n<3; n++)
-		texDesc.addressMode[n]=cudaAddressModeClamp;
+		texDesc.addressMode[n]=hipAddressModeClamp;
 
 	// -- Create texture object(s)
-	HANDLE_ERROR(cudaCreateTextureObject(mdlReal, &resDesc_real, &texDesc, NULL));
-	HANDLE_ERROR(cudaCreateTextureObject(mdlImag, &resDesc_imag, &texDesc, NULL));
+	HANDLE_ERROR(hipCreateTextureObject(mdlReal, &resDesc_real, &texDesc, NULL));
+	HANDLE_ERROR(hipCreateTextureObject(mdlImag, &resDesc_imag, &texDesc, NULL));
 #endif
 #else
-	DEBUG_HANDLE_ERROR(cudaMalloc( (void**) &mdlReal, mdlXYZ * sizeof(XFLOAT)));
-	DEBUG_HANDLE_ERROR(cudaMalloc( (void**) &mdlImag, mdlXYZ * sizeof(XFLOAT)));
+	DEBUG_HANDLE_ERROR(hipMalloc( (void**) &mdlReal, mdlXYZ * sizeof(XFLOAT)));
+	DEBUG_HANDLE_ERROR(hipMalloc( (void**) &mdlImag, mdlXYZ * sizeof(XFLOAT)));
 #endif
 	return true;
 }
@@ -181,26 +181,26 @@ void CudaProjector::initMdl(XFLOAT *real, XFLOAT *imag)
 	if(mdlZ!=0)  // 3D model
 	{
 		// -- make extents for automatic pitching (aligment) of allocated 3D arrays
-		cudaMemcpy3DParms copyParams = {0};
-		copyParams.extent = make_cudaExtent(mdlX, mdlY, mdlZ);
-		copyParams.kind   = cudaMemcpyHostToDevice;
+		hipMemcpy3DParms copyParams = {0};
+		copyParams.extent = make_hipExtent(mdlX, mdlY, mdlZ);
+		copyParams.kind   = hipMemcpyHostToDevice;
 
 		// -- Copy data
 		copyParams.dstArray = *texArrayReal;
-		copyParams.srcPtr   = make_cudaPitchedPtr(real, mdlX * sizeof(XFLOAT), mdlY, mdlZ);
-		DEBUG_HANDLE_ERROR(cudaMemcpy3D(&copyParams));
+		copyParams.srcPtr   = make_hipPitchedPtr(real, mdlX * sizeof(XFLOAT), mdlY, mdlZ);
+		DEBUG_HANDLE_ERROR(hipMemcpy3D(&copyParams));
 		copyParams.dstArray = *texArrayImag;
-		copyParams.srcPtr   = make_cudaPitchedPtr(imag, mdlX * sizeof(XFLOAT), mdlY, mdlZ);
-		DEBUG_HANDLE_ERROR(cudaMemcpy3D(&copyParams));
+		copyParams.srcPtr   = make_hipPitchedPtr(imag, mdlX * sizeof(XFLOAT), mdlY, mdlZ);
+		DEBUG_HANDLE_ERROR(hipMemcpy3D(&copyParams));
 	}
 	else // 2D model
 	{
-		DEBUG_HANDLE_ERROR(cudaMemcpy2D(texArrayReal2D, pitch2D, real, sizeof(XFLOAT) * mdlX, sizeof(XFLOAT) * mdlX, mdlY, cudaMemcpyHostToDevice));
-		DEBUG_HANDLE_ERROR(cudaMemcpy2D(texArrayImag2D, pitch2D, imag, sizeof(XFLOAT) * mdlX, sizeof(XFLOAT) * mdlX, mdlY, cudaMemcpyHostToDevice));
+		DEBUG_HANDLE_ERROR(hipMemcpy2D(texArrayReal2D, pitch2D, real, sizeof(XFLOAT) * mdlX, sizeof(XFLOAT) * mdlX, mdlY, hipMemcpyHostToDevice));
+		DEBUG_HANDLE_ERROR(hipMemcpy2D(texArrayImag2D, pitch2D, imag, sizeof(XFLOAT) * mdlX, sizeof(XFLOAT) * mdlX, mdlY, hipMemcpyHostToDevice));
 	}
 #else
-	DEBUG_HANDLE_ERROR(cudaMemcpy( mdlReal, real, mdlXYZ * sizeof(XFLOAT), cudaMemcpyHostToDevice));
-	DEBUG_HANDLE_ERROR(cudaMemcpy( mdlImag, imag, mdlXYZ * sizeof(XFLOAT), cudaMemcpyHostToDevice));
+	DEBUG_HANDLE_ERROR(hipMemcpy( mdlReal, real, mdlXYZ * sizeof(XFLOAT), hipMemcpyHostToDevice));
+	DEBUG_HANDLE_ERROR(hipMemcpy( mdlImag, imag, mdlXYZ * sizeof(XFLOAT), hipMemcpyHostToDevice));
 #endif
 
 }
@@ -213,18 +213,18 @@ void CudaProjector::initMdl(Complex *data)
 	if(mdlZ!=0)  // 3D model
 	{
 		// -- make extents for automatic pitching (aligment) of allocated 3D arrays
-		cudaMemcpy3DParms copyParams = {0};
-		copyParams.extent = make_cudaExtent(mdlX, mdlY, mdlZ);
-		copyParams.kind   = cudaMemcpyHostToDevice;
+		hipMemcpy3DParms copyParams = {0};
+		copyParams.extent = make_hipExtent(mdlX, mdlY, mdlZ);
+		copyParams.kind   = hipMemcpyHostToDevice;
 
 		// -- Copy data
 		copyParams.dstArray = *texArrayComplex;
-		copyParams.srcPtr   = make_cudaPitchedPtr(data, mdlX * sizeof(CUDACOMPLEX), mdlY, mdlZ);
-		DEBUG_HANDLE_ERROR(cudaMemcpy3D(&copyParams));
+		copyParams.srcPtr   = make_hipPitchedPtr(data, mdlX * sizeof(CUDACOMPLEX), mdlY, mdlZ);
+		DEBUG_HANDLE_ERROR(hipMemcpy3D(&copyParams));
 	}
 	else // 2D model
 	{
-		DEBUG_HANDLE_ERROR(cudaMemcpy2D(texArrayComplex2D, pitch2D, data, sizeof(CUDACOMPLEX) * mdlX, sizeof(CUDACOMPLEX) * mdlX, mdlY, cudaMemcpyHostToDevice));
+		DEBUG_HANDLE_ERROR(hipMemcpy2D(texArrayComplex2D, pitch2D, data, sizeof(CUDACOMPLEX) * mdlX, sizeof(CUDACOMPLEX) * mdlX, mdlY, hipMemcpyHostToDevice));
 	}
 #else
 	XFLOAT *tmpReal = new XFLOAT[mdlXYZ];
@@ -248,16 +248,16 @@ void CudaProjector::clear()
 {
 	if (mdlComplex != 0)
 	{
-		cudaDestroyTextureObject(*mdlComplex);
+		hipDestroyTextureObject(*mdlComplex);
 		delete mdlComplex;
 
 		if(mdlZ!=0) //3D case
 		{
-			cudaFreeArray(*texArrayComplex);
+			hipFreeArray(*texArrayComplex);
 			delete texArrayComplex;
 		}
 		else //2D case
-			cudaFree(texArrayComplex2D);
+			hipFree(texArrayComplex2D);
 
 		texArrayComplex= 0;
 		mdlComplex = 0;
@@ -281,29 +281,29 @@ void CudaProjector::clear()
 	if (mdlReal != 0)
 	{
 #ifndef CUDA_NO_TEXTURES
-		cudaDestroyTextureObject(*mdlReal);
-		cudaDestroyTextureObject(*mdlImag);
+		hipDestroyTextureObject(*mdlReal);
+		hipDestroyTextureObject(*mdlImag);
 		delete mdlReal;
 		delete mdlImag;
 
 		if(mdlZ!=0) //3D case
 		{
-			cudaFreeArray(*texArrayReal);
-			cudaFreeArray(*texArrayImag);
+			hipFreeArray(*texArrayReal);
+			hipFreeArray(*texArrayImag);
 			delete texArrayReal;
 			delete texArrayImag;
 		}
 		else //2D case
 		{
-			HANDLE_ERROR(cudaFree(texArrayReal2D));
-			HANDLE_ERROR(cudaFree(texArrayImag2D));
+			HANDLE_ERROR(hipFree(texArrayReal2D));
+			HANDLE_ERROR(hipFree(texArrayImag2D));
 		}
 
 		texArrayReal = 0;
 		texArrayImag = 0;
 #else
-		cudaFree(mdlReal);
-		cudaFree(mdlImag);
+		hipFree(mdlReal);
+		hipFree(mdlImag);
 #endif
 		mdlReal = 0;
 		mdlImag = 0;

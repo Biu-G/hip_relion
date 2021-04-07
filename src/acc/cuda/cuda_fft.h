@@ -3,17 +3,17 @@
 
 #include "src/acc/cuda/cuda_settings.h"
 #include "src/acc/cuda/cuda_mem_utils.h"
-#include <cuda_runtime.h>
-#include <cufft.h>
+#include <hip/hip_runtime.h>
+#include <hipfft.h>
 
 #ifdef DEBUG_CUDA
 #define HANDLE_CUFFT_ERROR( err ) (CufftHandleError( err, __FILE__, __LINE__ ))
 #else
 #define HANDLE_CUFFT_ERROR( err ) (err) //Do nothing
 #endif
-static void CufftHandleError( cufftResult err, const char *file, int line )
+static void CufftHandleError( hipfftResult err, const char *file, int line )
 {
-    if (err != CUFFT_SUCCESS)
+    if (err != HIPFFT_SUCCESS)
     {
         fprintf(stderr, "Cufft error in file '%s' in line %i : %s.\n",
                 __FILE__, __LINE__, "error" );
@@ -30,13 +30,13 @@ class CudaFFT
 	bool planSet;
 public:
 #ifdef ACC_DOUBLE_PRECISION
-	AccPtr<cufftDoubleReal> reals;
-	AccPtr<cufftDoubleComplex> fouriers;
+	AccPtr<hipfftDoubleReal> reals;
+	AccPtr<hipfftDoubleComplex> fouriers;
 #else
-	AccPtr<cufftReal> reals;
-	AccPtr<cufftComplex> fouriers;
+	AccPtr<hipfftReal> reals;
+	AccPtr<hipfftComplex> fouriers;
 #endif
-	cufftHandle cufftPlanForward, cufftPlanBackward;
+	hipfftHandle cufftPlanForward, cufftPlanBackward;
 	int direction;
 	int dimension, idist, odist, istride, ostride;
 	int inembed[3];
@@ -46,7 +46,7 @@ public:
 	CudaCustomAllocator *CFallocator;
 	int batchSpace, batchIters, reqN;
 
-	CudaFFT(cudaStream_t stream, CudaCustomAllocator *allocator, int transformDimension = 2):
+	CudaFFT(hipStream_t stream, CudaCustomAllocator *allocator, int transformDimension = 2):
 		reals(stream, allocator),
 		fouriers(stream, allocator),
 		cufftPlanForward(0),
@@ -81,23 +81,23 @@ public:
 #ifdef ACC_DOUBLE_PRECISION
 	    if(direction<=0)
 	    {
-			HANDLE_CUFFT_ERROR( cufftEstimateMany(dimension, inembed, inembed, istride, idist, onembed, ostride, odist, CUFFT_D2Z, batch, &biggness));
+			HANDLE_CUFFT_ERROR( hipfftEstimateMany(dimension, inembed, inembed, istride, idist, onembed, ostride, odist, HIPFFT_D2Z, batch, &biggness));
 			needed += biggness;
 	    }
 		if(direction>=0)
 		{
-			HANDLE_CUFFT_ERROR( cufftEstimateMany(dimension, inembed, onembed, ostride, odist, inembed, istride, idist, CUFFT_Z2D, batch, &biggness));
+			HANDLE_CUFFT_ERROR( hipfftEstimateMany(dimension, inembed, onembed, ostride, odist, inembed, istride, idist, HIPFFT_Z2D, batch, &biggness));
 			needed += biggness;
 		}
 #else
 		if(direction<=0)
 		{
-			HANDLE_CUFFT_ERROR( cufftEstimateMany(dimension, inembed, inembed, istride, idist, onembed, ostride, odist, CUFFT_R2C, batch, &biggness));
+			HANDLE_CUFFT_ERROR( hipfftEstimateMany(dimension, inembed, inembed, istride, idist, onembed, ostride, odist, HIPFFT_R2C, batch, &biggness));
 			needed += biggness;
 		}
 		if(direction>=0)
 		{
-			HANDLE_CUFFT_ERROR( cufftEstimateMany(dimension, inembed, onembed, ostride, odist, inembed, istride, idist, CUFFT_C2R, batch, &biggness));
+			HANDLE_CUFFT_ERROR( hipfftEstimateMany(dimension, inembed, onembed, ostride, odist, inembed, istride, idist, HIPFFT_C2R, batch, &biggness));
 			needed += biggness;
 		}
 #endif
@@ -184,7 +184,7 @@ public:
 
 		size_t needed, avail, total;
 		needed = estimate(batchSize[0]);
-		DEBUG_HANDLE_ERROR(cudaMemGetInfo( &avail, &total ));
+		DEBUG_HANDLE_ERROR(hipMemGetInfo( &avail, &total ));
 
 //		std::cout << std::endl << "needed = ";
 //		printf("%15zu\n", needed);
@@ -245,7 +245,7 @@ public:
 		fouriers.deviceAlloc();
 		fouriers.hostAlloc();
 
-//		DEBUG_HANDLE_ERROR(cudaMemGetInfo( &avail, &total ));
+//		DEBUG_HANDLE_ERROR(hipMemGetInfo( &avail, &total ));
 //		needed = estimate(batchSize[0], fudge);
 
 //		std::cout << "after alloc: " << std::endl << std::endl << "needed = ";
@@ -256,35 +256,35 @@ public:
 #ifdef ACC_DOUBLE_PRECISION
 	    if(direction<=0)
 	    {
-	    	HANDLE_CUFFT_ERROR( cufftPlanMany(&cufftPlanForward,  dimension, inembed, inembed, istride, idist, onembed, ostride, odist, CUFFT_D2Z, batchSize[0]));
-	   		HANDLE_CUFFT_ERROR( cufftSetStream(cufftPlanForward, fouriers.getStream()));
+	    	HANDLE_CUFFT_ERROR( hipfftPlanMany(&cufftPlanForward,  dimension, inembed, inembed, istride, idist, onembed, ostride, odist, HIPFFT_D2Z, batchSize[0]));
+	   		HANDLE_CUFFT_ERROR( hipfftSetStream(cufftPlanForward, fouriers.getStream()));
 	    }
 	    if(direction>=0)
 	    {
-	    	HANDLE_CUFFT_ERROR( cufftPlanMany(&cufftPlanBackward, dimension, inembed, onembed, ostride, odist, inembed, istride, idist, CUFFT_Z2D, batchSize[0]));
-			HANDLE_CUFFT_ERROR( cufftSetStream(cufftPlanBackward, reals.getStream()));
+	    	HANDLE_CUFFT_ERROR( hipfftPlanMany(&cufftPlanBackward, dimension, inembed, onembed, ostride, odist, inembed, istride, idist, HIPFFT_Z2D, batchSize[0]));
+			HANDLE_CUFFT_ERROR( hipfftSetStream(cufftPlanBackward, reals.getStream()));
 	    }
 		planSet = true;
 	}
 
 	void forward()
-	{ HANDLE_CUFFT_ERROR( cufftExecD2Z(cufftPlanForward, ~reals, ~fouriers) ); }
+	{ HANDLE_CUFFT_ERROR( hipfftExecD2Z(cufftPlanForward, ~reals, ~fouriers) ); }
 
 	void backward()
-	{ HANDLE_CUFFT_ERROR( cufftExecZ2D(cufftPlanBackward, ~fouriers, ~reals) ); }
+	{ HANDLE_CUFFT_ERROR( hipfftExecZ2D(cufftPlanBackward, ~fouriers, ~reals) ); }
 
-	void backward(AccPtr<cufftDoubleReal> &dst)
-		{ HANDLE_CUFFT_ERROR( cufftExecZ2D(cufftPlanBackward, ~fouriers, ~dst) ); }
+	void backward(AccPtr<hipfftDoubleReal> &dst)
+		{ HANDLE_CUFFT_ERROR( hipfftExecZ2D(cufftPlanBackward, ~fouriers, ~dst) ); }
 #else
 	 	if(direction<=0)
 	 	{
-	 		HANDLE_CUFFT_ERROR( cufftPlanMany(&cufftPlanForward,  dimension, inembed, inembed, istride, idist, onembed, ostride, odist, CUFFT_R2C, batchSize[0]));
-	 		HANDLE_CUFFT_ERROR( cufftSetStream(cufftPlanForward, fouriers.getStream()));
+	 		HANDLE_CUFFT_ERROR( hipfftPlanMany(&cufftPlanForward,  dimension, inembed, inembed, istride, idist, onembed, ostride, odist, HIPFFT_R2C, batchSize[0]));
+	 		HANDLE_CUFFT_ERROR( hipfftSetStream(cufftPlanForward, fouriers.getStream()));
 	 	}
 	 	if(direction>=0)
 	 	{
-	 		HANDLE_CUFFT_ERROR( cufftPlanMany(&cufftPlanBackward, dimension, inembed, onembed, ostride, odist, inembed, istride, idist, CUFFT_C2R, batchSize[0]));
-	 		HANDLE_CUFFT_ERROR( cufftSetStream(cufftPlanBackward, reals.getStream()));
+	 		HANDLE_CUFFT_ERROR( hipfftPlanMany(&cufftPlanBackward, dimension, inembed, onembed, ostride, odist, inembed, istride, idist, HIPFFT_C2R, batchSize[0]));
+	 		HANDLE_CUFFT_ERROR( hipfftSetStream(cufftPlanBackward, reals.getStream()));
 	 	}
 		planSet = true;
 	}
@@ -296,7 +296,7 @@ public:
 			std::cout << "trying to execute a forward plan for a cudaFFT transformer which is backwards-only" << std::endl;
 			CRITICAL(ERRCUFFTDIRF);
 		}
-		HANDLE_CUFFT_ERROR( cufftExecR2C(cufftPlanForward, ~reals, ~fouriers) );
+		HANDLE_CUFFT_ERROR( hipfftExecR2C(cufftPlanForward, ~reals, ~fouriers) );
 	}
 
 	void backward()
@@ -306,7 +306,7 @@ public:
 			std::cout << "trying to execute a backwards plan for a cudaFFT transformer which is forwards-only" << std::endl;
 			CRITICAL(ERRCUFFTDIRR);
 		}
-		HANDLE_CUFFT_ERROR( cufftExecC2R(cufftPlanBackward, ~fouriers, ~reals) );
+		HANDLE_CUFFT_ERROR( hipfftExecC2R(cufftPlanBackward, ~fouriers, ~reals) );
 	}
 
 #endif
@@ -318,9 +318,9 @@ public:
 			reals.freeIfSet();
 			fouriers.freeIfSet();
 			if(direction<=0)
-				HANDLE_CUFFT_ERROR(cufftDestroy(cufftPlanForward));
+				HANDLE_CUFFT_ERROR(hipfftDestroy(cufftPlanForward));
 			if(direction>=0)
-				HANDLE_CUFFT_ERROR(cufftDestroy(cufftPlanBackward));
+				HANDLE_CUFFT_ERROR(hipfftDestroy(cufftPlanBackward));
 			planSet = false;
 		}
 	}

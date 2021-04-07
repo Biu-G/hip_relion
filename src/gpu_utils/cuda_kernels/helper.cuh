@@ -1,7 +1,8 @@
+#include "hip/hip_runtime.h"
 #ifndef CUDA_HELPER_KERNELS_CUH_
 #define CUDA_HELPER_KERNELS_CUH_
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -101,7 +102,7 @@ __global__ void cuda_kernel_collect2jobs(	XFLOAT *g_oo_otrans_x,          // otr
 	//threadid
 	int tid = threadIdx.x;
 
-	extern __shared__ XFLOAT buffer[];
+	HIP_DYNAMIC_SHARED( XFLOAT, buffer)
 
 	XFLOAT * s_o_weights 					= &buffer[                0];
 	XFLOAT * s_thr_wsum_sigma2_offset       = &buffer[  SUMW_BLOCK_SIZE];

@@ -29,7 +29,7 @@
 
 /**
  * \file
- * cub::DeviceSpmv provides device-wide parallel operations for performing sparse-matrix * vector multiplication (SpMV).
+ * hipcub::DeviceSpmv provides device-wide parallel operations for performing sparse-matrix * vector multiplication (SpMV).
  */
 
 #pragma once
@@ -83,7 +83,7 @@ struct DeviceSpmv
      *
      * \par
      * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/device/device_spmv.cuh>
+     * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_spmv.cuh>
      *
      * // Declare, allocate, and initialize device-accessible pointers for input matrix A, input vector x,
      * // and output vector y
@@ -108,15 +108,15 @@ struct DeviceSpmv
      * // Determine temporary device storage requirements
      * void*    d_temp_storage = NULL;
      * size_t   temp_storage_bytes = 0;
-     * cub::DeviceSpmv::CsrMV(d_temp_storage, temp_storage_bytes, d_values,
+     * hipcub::DeviceSpmv::CsrMV(d_temp_storage, temp_storage_bytes, d_values,
      *     d_row_offsets, d_column_indices, d_vector_x, d_vector_y,
      *     num_rows, num_cols, num_nonzeros, alpha, beta);
      *
      * // Allocate temporary storage
-     * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+     * hipMalloc(&d_temp_storage, temp_storage_bytes);
      *
      * // Run SpMV
-     * cub::DeviceSpmv::CsrMV(d_temp_storage, temp_storage_bytes, d_values,
+     * hipcub::DeviceSpmv::CsrMV(d_temp_storage, temp_storage_bytes, d_values,
      *     d_row_offsets, d_column_indices, d_vector_x, d_vector_y,
      *     num_rows, num_cols, num_nonzeros, alpha, beta);
      *
@@ -129,7 +129,7 @@ struct DeviceSpmv
     template <
         typename            ValueT>
     CUB_RUNTIME_FUNCTION
-    static cudaError_t CsrMV(
+    static hipError_t CsrMV(
         void*               d_temp_storage,                     ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
         size_t&             temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
         ValueT*             d_values,                           ///< [in] Pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix <b>A</b>.
@@ -140,7 +140,7 @@ struct DeviceSpmv
         int                 num_rows,                           ///< [in] number of rows of matrix <b>A</b>.
         int                 num_cols,                           ///< [in] number of columns of matrix <b>A</b>.
         int                 num_nonzeros,                       ///< [in] number of nonzero elements of matrix <b>A</b>.
-        cudaStream_t        stream                  = 0,        ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+        hipStream_t        stream                  = 0,        ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
         bool                debug_synchronous       = false)    ///< [in] <b>[optional]</b> Whether or not to synchronize the stream after every kernel launch to check for errors.  May cause significant slowdown.  Default is \p false.
     {
         SpmvParams<ValueT, int> spmv_params;

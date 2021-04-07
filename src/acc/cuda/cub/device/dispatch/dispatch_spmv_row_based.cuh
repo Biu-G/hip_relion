@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
@@ -29,7 +30,7 @@
 
 /**
  * \file
- * cub::DeviceSpmv provides device-wide parallel operations for performing sparse-matrix * vector multiplication (SpMV).
+ * hipcub::DeviceSpmv provides device-wide parallel operations for performing sparse-matrix * vector multiplication (SpMV).
  */
 
 #pragma once
@@ -214,8 +215,8 @@ __global__ void DeviceSegmentFixupKernel(
             AgentSegmentFixupPolicyT,
             PairsInputIteratorT,
             AggregatesOutputIteratorT,
-            cub::Equality,
-            cub::Sum,
+            hipcub::Equality,
+            hipcub::Sum,
             OffsetT>
         AgentSegmentFixupT;
 
@@ -223,7 +224,7 @@ __global__ void DeviceSegmentFixupKernel(
     __shared__ typename AgentSegmentFixupT::TempStorage temp_storage;
 
     // Process tiles
-    AgentSegmentFixupT(temp_storage, d_pairs_in, d_aggregates_out, cub::Equality(), cub::Sum()).ConsumeRange(
+    AgentSegmentFixupT(temp_storage, d_pairs_in, d_aggregates_out, hipcub::Equality(), hipcub::Sum()).ConsumeRange(
         num_items,
         num_tiles,
         tile_state);
@@ -541,31 +542,31 @@ struct DispatchSpmv
      * kernel invocations.
      */
     template <
-//        typename                Spmv1ColKernelT,                    ///< Function type of cub::DeviceSpmv1ColKernel
-//        typename                SpmvSearchKernelT,                  ///< Function type of cub::AgentSpmvSearchKernel
-        typename                SpmvKernelT>                        ///< Function type of cub::AgentSpmvKernel
-//        typename                SegmentFixupKernelT>                 ///< Function type of cub::DeviceSegmentFixupKernelT
+//        typename                Spmv1ColKernelT,                    ///< Function type of hipcub::DeviceSpmv1ColKernel
+//        typename                SpmvSearchKernelT,                  ///< Function type of hipcub::AgentSpmvSearchKernel
+        typename                SpmvKernelT>                        ///< Function type of hipcub::AgentSpmvKernel
+//        typename                SegmentFixupKernelT>                 ///< Function type of hipcub::DeviceSegmentFixupKernelT
     CUB_RUNTIME_FUNCTION __forceinline__
-    static cudaError_t Dispatch(
+    static hipError_t Dispatch(
         void*                   d_temp_storage,                     ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
         size_t&                 temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
         SpmvParamsT&            spmv_params,                        ///< SpMV input parameter bundle
-        cudaStream_t            stream,                             ///< [in] CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+        hipStream_t            stream,                             ///< [in] CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
         bool                    debug_synchronous,                  ///< [in] Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
 //        Spmv1ColKernelT         spmv_1col_kernel,                   ///< [in] Kernel function pointer to parameterization of DeviceSpmv1ColKernel
 //        SpmvSearchKernelT       spmv_search_kernel,                 ///< [in] Kernel function pointer to parameterization of AgentSpmvSearchKernel
         SpmvKernelT             spmv_kernel,                        ///< [in] Kernel function pointer to parameterization of AgentSpmvKernel
-//        SegmentFixupKernelT     fixup_kernel,               ///< [in] Kernel function pointer to parameterization of cub::DeviceSegmentFixupKernel
+//        SegmentFixupKernelT     fixup_kernel,               ///< [in] Kernel function pointer to parameterization of hipcub::DeviceSegmentFixupKernel
         KernelConfig            spmv_config,                        ///< [in] Dispatch parameters that match the policy that \p spmv_kernel was compiled for
         KernelConfig            fixup_config)               ///< [in] Dispatch parameters that match the policy that \p fixup_kernel was compiled for
     {
 #ifndef CUB_RUNTIME_ENABLED
 
         // Kernel launch not supported from this device
-        return CubDebug(cudaErrorNotSupported );
+        return CubDebug(hipErrorNotSupported );
 
 #else
-        cudaError error = cudaSuccess;
+        hipError_t error = hipSuccess;
         do
         {
 /*
@@ -575,22 +576,22 @@ struct DispatchSpmv
                 {
                     // Return if the caller is simply requesting the size of the storage allocation
                     temp_storage_bytes = 1;
-                    return cudaSuccess;
+                    return hipSuccess;
                 }
 
                 // Get search/init grid dims
                 int degen_col_kernel_block_size     = INIT_KERNEL_THREADS;
                 int degen_col_kernel_grid_size      = (spmv_params.num_rows + degen_col_kernel_block_size - 1) / degen_col_kernel_block_size;
 
-                if (debug_synchronous) _CubLog("Invoking spmv_1col_kernel<<<%d, %d, 0, %lld>>>()\n",
+                if (debug_synchronous) _CubLog("Invoking hipLaunchKernelGGL(spmv_1col_kernel, %d, %d, 0, %lld)\n",
                     degen_col_kernel_grid_size, degen_col_kernel_block_size, (long long) stream);
 
                 // Invoke spmv_search_kernel
-                spmv_1col_kernel<<<degen_col_kernel_grid_size, degen_col_kernel_block_size, 0, stream>>>(
+                hipLaunchKernelGGL(spmv_1col_kernel, degen_col_kernel_grid_size, degen_col_kernel_block_size, 0, stream, 
                     spmv_params);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError())) break;
+                if (CubDebug(error = hipPeekAtLastError())) break;
 
                 // Sync the stream if specified to flush runtime errors
                 if (debug_synchronous && (CubDebug(error = SyncStream(stream)))) break;
@@ -600,15 +601,15 @@ struct DispatchSpmv
 */
             // Get device ordinal
             int device_ordinal;
-            if (CubDebug(error = cudaGetDevice(&device_ordinal))) break;
+            if (CubDebug(error = hipGetDevice(&device_ordinal))) break;
 
             // Get SM count
             int sm_count;
-            if (CubDebug(error = cudaDeviceGetAttribute (&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal))) break;
+            if (CubDebug(error = hipDeviceGetAttribute (&sm_count, hipDeviceAttributeMultiprocessorCount, device_ordinal))) break;
 
             // Get max x-dimension of grid
             int max_dim_x;
-            if (CubDebug(error = cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal))) break;;
+            if (CubDebug(error = hipDeviceGetAttribute(&max_dim_x, hipDeviceAttributeMaxGridDimX, device_ordinal))) break;;
 
             // Get SM occupancy for kernels
             int spmv_sm_occupancy;
@@ -676,7 +677,7 @@ struct DispatchSpmv
             if (d_temp_storage == NULL)
             {
                 // Return if the caller is simply requesting the size of the storage allocation
-                return cudaSuccess;
+                return hipSuccess;
             }
 
             // Construct the tile status interface
@@ -708,17 +709,17 @@ struct DispatchSpmv
                 // Use separate search kernel if we have enough spmv tiles to saturate the device
 
                 // Log spmv_search_kernel configuration
-                if (debug_synchronous) _CubLog("Invoking spmv_search_kernel<<<%d, %d, 0, %lld>>>()\n",
+                if (debug_synchronous) _CubLog("Invoking hipLaunchKernelGGL(spmv_search_kernel, %d, %d, 0, %lld)\n",
                     search_grid_size, search_block_size, (long long) stream);
 
                 // Invoke spmv_search_kernel
-                spmv_search_kernel<<<search_grid_size, search_block_size, 0, stream>>>(
+                hipLaunchKernelGGL(spmv_search_kernel, search_grid_size, search_block_size, 0, stream, 
                     num_spmv_tiles,
                     d_tile_coordinates,
                     spmv_params);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError())) break;
+                if (CubDebug(error = hipPeekAtLastError())) break;
 
                 // Sync the stream if specified to flush runtime errors
                 if (debug_synchronous && (CubDebug(error = SyncStream(stream)))) break;
@@ -729,7 +730,7 @@ struct DispatchSpmv
                 spmv_grid_size.x, spmv_grid_size.y, spmv_grid_size.z, spmv_config.block_threads, (long long) stream, spmv_config.items_per_thread, spmv_sm_occupancy);
 
             // Invoke spmv_kernel
-            spmv_kernel<<<spmv_grid_size, spmv_config.block_threads, 0, stream>>>(
+            hipLaunchKernelGGL(spmv_kernel, spmv_grid_size, spmv_config.block_threads, 0, stream, 
                 spmv_params,
 //                d_tile_coordinates,
 //                d_tile_carry_pairs,
@@ -739,7 +740,7 @@ struct DispatchSpmv
                 rows_per_tile);
 
             // Check for failure to launch
-            if (CubDebug(error = cudaPeekAtLastError())) break;
+            if (CubDebug(error = hipPeekAtLastError())) break;
 
             // Sync the stream if specified to flush runtime errors
             if (debug_synchronous && (CubDebug(error = SyncStream(stream)))) break;
@@ -752,7 +753,7 @@ struct DispatchSpmv
                     fixup_grid_size.x, fixup_grid_size.y, fixup_grid_size.z, fixup_config.block_threads, (long long) stream, fixup_config.items_per_thread, fixup_sm_occupancy);
 
                 // Invoke fixup_kernel
-                fixup_kernel<<<fixup_grid_size, fixup_config.block_threads, 0, stream>>>(
+                hipLaunchKernelGGL(fixup_kernel, fixup_grid_size, fixup_config.block_threads, 0, stream, 
                     d_tile_carry_pairs,
                     spmv_params.d_vector_y,
                     num_spmv_tiles,
@@ -760,7 +761,7 @@ struct DispatchSpmv
                     tile_state);
 
                 // Check for failure to launch
-                if (CubDebug(error = cudaPeekAtLastError())) break;
+                if (CubDebug(error = hipPeekAtLastError())) break;
 
                 // Sync the stream if specified to flush runtime errors
                 if (debug_synchronous && (CubDebug(error = SyncStream(stream)))) break;
@@ -783,14 +784,14 @@ struct DispatchSpmv
      * Internal dispatch routine for computing a device-wide reduction
      */
     CUB_RUNTIME_FUNCTION __forceinline__
-    static cudaError_t Dispatch(
+    static hipError_t Dispatch(
         void*                   d_temp_storage,                     ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
         size_t&                 temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
         SpmvParamsT&            spmv_params,                        ///< SpMV input parameter bundle
-        cudaStream_t            stream                  = 0,        ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+        hipStream_t            stream                  = 0,        ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
         bool                    debug_synchronous       = false)    ///< [in] <b>[optional]</b> Whether or not to synchronize the stream after every kernel launch to check for errors.  May cause significant slowdown.  Default is \p false.
     {
-        cudaError error = cudaSuccess;
+        hipError_t error = hipSuccess;
         do
         {
             // Get PTX version

@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating in device-wide histogram .
+ * hipcub::AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating in device-wide histogram .
  */
 
 #pragma once

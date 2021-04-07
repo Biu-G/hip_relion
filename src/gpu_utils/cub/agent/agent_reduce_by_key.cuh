@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::AgentReduceByKey implements a stateful abstraction of CUDA thread blocks for participating in device-wide reduce-value-by-key.
+ * hipcub::AgentReduceByKey implements a stateful abstraction of CUDA thread blocks for participating in device-wide reduce-value-by-key.
  */
 
 #pragma once
@@ -159,7 +159,7 @@ struct AgentReduceByKey
         TWO_PHASE_SCATTER   = (ITEMS_PER_THREAD > 1),
 
         // Whether or not the scan operation has a zero-valued identity value (true if we're performing addition on a primitive type)
-        HAS_IDENTITY_ZERO   = (Equals<ReductionOpT, cub::Sum>::VALUE) && (Traits<ValueOutputT>::PRIMITIVE),
+        HAS_IDENTITY_ZERO   = (Equals<ReductionOpT, hipcub::Sum>::VALUE) && (Traits<ValueOutputT>::PRIMITIVE),
     };
 
     // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys

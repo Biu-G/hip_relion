@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include "src/gpu_utils/cuda_device_utils.cuh"
 #include "src/gpu_utils/cuda_kernels/helper.cuh"
 #include "src/gpu_utils/cuda_settings.h"

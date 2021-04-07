@@ -1,9 +1,9 @@
 #include "src/acc/acc_projector_plan.h"
 #include "src/time.h"
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #ifdef CUDA
-//#include <cuda_runtime.h>
+//#include <hip/hip_runtime.h>
 #ifdef CUDA_FORCESTL
 #include "src/acc/cuda/cuda_utils_stl.cuh"
 #else

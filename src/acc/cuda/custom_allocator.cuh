@@ -4,7 +4,7 @@
 
 #ifdef CUDA
 #include "src/acc/cuda/cuda_settings.h"
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #endif
 
 #include <signal.h>
@@ -52,7 +52,7 @@ public:
 		BYTE *ptr;
 		size_t size;
 		bool free;
-		cudaEvent_t readyEvent; //Event record used for auto free
+		hipEvent_t readyEvent; //Event record used for auto free
 		bool freeWhenReady;
 
 
@@ -78,7 +78,7 @@ public:
 			ptr = NULL;
 
 			if (readyEvent != 0)
-				DEBUG_HANDLE_ERROR(cudaEventDestroy(readyEvent));
+				DEBUG_HANDLE_ERROR(hipEventDestroy(readyEvent));
 		}
 
 	public:
@@ -92,14 +92,14 @@ public:
 		bool isFree() { return free; }
 
 		inline
-		cudaEvent_t getReadyEvent() { return readyEvent; }
+		hipEvent_t getReadyEvent() { return readyEvent; }
 
 		inline
-		void markReadyEvent(cudaStream_t stream = 0)
+		void markReadyEvent(hipStream_t stream = 0)
 		{
 			//TODO add a debug warning if event already set
-			DEBUG_HANDLE_ERROR(cudaEventCreate(&readyEvent));
-			DEBUG_HANDLE_ERROR(cudaEventRecord(readyEvent, stream));
+			DEBUG_HANDLE_ERROR(hipEventCreate(&readyEvent));
+			DEBUG_HANDLE_ERROR(hipEventRecord(readyEvent, stream));
 		}
 
 		inline
@@ -138,7 +138,7 @@ private:
 		{
 			if (! a->free && a->freeWhenReady && a->readyEvent != 0)
 			{
-				DEBUG_HANDLE_ERROR(cudaEventSynchronize(a->readyEvent));
+				DEBUG_HANDLE_ERROR(hipEventSynchronize(a->readyEvent));
 				somethingReady = true;
 			}
 
@@ -162,15 +162,15 @@ private:
 
 			if (! curr->free && curr->freeWhenReady && curr->readyEvent != 0)
 			{
-				cudaError_t e = cudaEventQuery(curr->readyEvent);
+				hipError_t e = hipEventQuery(curr->readyEvent);
 
-				if (e == cudaSuccess)
+				if (e == hipSuccess)
 				{
 					_free(curr);
 					next = first; //List modified, restart
 					somethingFreed = true;
 				}
-				else if (e != cudaErrorNotReady)
+				else if (e != hipErrorNotReady)
 				{
 					_printState();
 					HandleError( e, __FILE__, __LINE__ );
@@ -199,7 +199,7 @@ private:
 		else
 		{
 			size_t free, total;
-			DEBUG_HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
+			DEBUG_HANDLE_ERROR(hipMemGetInfo( &free, &total ));
 			return free;
 		}
 	}
@@ -286,9 +286,9 @@ private:
 #ifdef CUSTOM_ALLOCATOR_MEMGUARD
 		size_t guardCount = a->size - (a->guardPtr - a->ptr);
 		BYTE *guards = new BYTE[guardCount];
-		cudaStream_t stream = 0;
+		hipStream_t stream = 0;
 		CudaShortcuts::cpyDeviceToHost<BYTE>( a->guardPtr, guards, guardCount, stream);
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(stream));
 		for (int i = 0; i < guardCount; i ++)
 			if (guards[i] != GUARD_VALUE)
 			{
@@ -408,7 +408,7 @@ private:
 		}
 		else
 		{
-			DEBUG_HANDLE_ERROR(cudaFree( a->ptr ));
+			DEBUG_HANDLE_ERROR(hipFree( a->ptr ));
 			a->ptr = NULL;
 
 			if ( a->prev != NULL)
@@ -433,7 +433,7 @@ private:
 
 		if (totalSize > 0)
 		{
-			HANDLE_ERROR(cudaMalloc( (void**) &(first->ptr), totalSize));
+			HANDLE_ERROR(hipMalloc( (void**) &(first->ptr), totalSize));
 			cache = true;
 		}
 		else
@@ -443,7 +443,7 @@ private:
 	void _clear()
 	{
 		if (first->ptr != NULL)
-			DEBUG_HANDLE_ERROR(cudaFree( first->ptr ));
+			DEBUG_HANDLE_ERROR(hipFree( first->ptr ));
 
 		first->ptr = NULL;
 
@@ -580,7 +580,7 @@ public:
 			newAlloc = new Alloc();
 			newAlloc->size = size;
 			newAlloc->free = false;
-			DEBUG_HANDLE_ERROR(cudaMalloc( (void**) &(newAlloc->ptr), size));
+			DEBUG_HANDLE_ERROR(hipMalloc( (void**) &(newAlloc->ptr), size));
 
 			//Just add to start by replacing first
 			newAlloc->next = first;
@@ -591,9 +591,9 @@ public:
 #ifdef CUSTOM_ALLOCATOR_MEMGUARD
 		newAlloc->backtraceSize = backtrace(newAlloc->backtrace, 20);
 		newAlloc->guardPtr = newAlloc->ptr + requestedSize;
-		cudaStream_t stream = 0;
+		hipStream_t stream = 0;
 		CudaShortcuts::memInit<BYTE>( newAlloc->guardPtr, GUARD_VALUE, size - requestedSize, stream); //TODO switch to specialized stream
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(stream));
 #endif
 
 		return newAlloc;

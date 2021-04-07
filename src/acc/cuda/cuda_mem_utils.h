@@ -2,8 +2,8 @@
 #define CUDA_DEVICE_MEM_UTILS_H_
 
 #ifdef CUDA
-#include <cuda_runtime.h>
-#include <curand.h>
+#include <hip/hip_runtime.h>
+#include <hiprand.h>
 #include "src/acc/cuda/cuda_settings.h"
 #include "src/acc/cuda/custom_allocator.cuh"
 #endif
@@ -31,7 +31,7 @@ static void cudaPrintMemInfo()
 {
 	size_t free;
 	size_t total;
-	DEBUG_HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
+	DEBUG_HANDLE_ERROR(hipMemGetInfo( &free, &total ));
 	float free_hr(free/(1024.*1024.));
 	float total_hr(total/(1024.*1024.));
     printf( "free %.2fMiB, total %.2fMiB, used %.2fMiB\n",
@@ -42,49 +42,49 @@ template< typename T>
 static inline
 void cudaCpyHostToDevice( T *h_ptr, T *d_ptr, size_t size)
 {
-	DEBUG_HANDLE_ERROR(cudaMemcpy( d_ptr, h_ptr, size * sizeof(T), cudaMemcpyHostToDevice));
+	DEBUG_HANDLE_ERROR(hipMemcpy( d_ptr, h_ptr, size * sizeof(T), hipMemcpyHostToDevice));
 };
 
 template< typename T>
 static inline
-void cudaCpyHostToDevice( T *h_ptr, T *d_ptr, size_t size, cudaStream_t &stream)
+void cudaCpyHostToDevice( T *h_ptr, T *d_ptr, size_t size, hipStream_t &stream)
 {
-	DEBUG_HANDLE_ERROR(cudaMemcpyAsync( d_ptr, h_ptr, size * sizeof(T), cudaMemcpyHostToDevice, stream));
+	DEBUG_HANDLE_ERROR(hipMemcpyAsync( d_ptr, h_ptr, size * sizeof(T), hipMemcpyHostToDevice, stream));
 };
 
 template< typename T>
 static inline
 void cudaCpyDeviceToHost( T *d_ptr, T *h_ptr, size_t size)
 {
-	DEBUG_HANDLE_ERROR(cudaMemcpy( h_ptr, d_ptr, size * sizeof(T), cudaMemcpyDeviceToHost));
+	DEBUG_HANDLE_ERROR(hipMemcpy( h_ptr, d_ptr, size * sizeof(T), hipMemcpyDeviceToHost));
 };
 
 template< typename T>
 static inline
-void cudaCpyDeviceToHost( T *d_ptr, T *h_ptr, size_t size, cudaStream_t &stream)
+void cudaCpyDeviceToHost( T *d_ptr, T *h_ptr, size_t size, hipStream_t &stream)
 {
-	DEBUG_HANDLE_ERROR(cudaMemcpyAsync( h_ptr, d_ptr, size * sizeof(T), cudaMemcpyDeviceToHost, stream));
+	DEBUG_HANDLE_ERROR(hipMemcpyAsync( h_ptr, d_ptr, size * sizeof(T), hipMemcpyDeviceToHost, stream));
 };
 
 template< typename T>
 static inline
-void cudaCpyDeviceToDevice( T *src, T *des, size_t size, cudaStream_t stream)
+void cudaCpyDeviceToDevice( T *src, T *des, size_t size, hipStream_t stream)
 {
-	DEBUG_HANDLE_ERROR(cudaMemcpyAsync( des, src, size * sizeof(T), cudaMemcpyDeviceToDevice, stream));
+	DEBUG_HANDLE_ERROR(hipMemcpyAsync( des, src, size * sizeof(T), hipMemcpyDeviceToDevice, stream));
 };
 
 template< typename T>
 static inline
 void cudaMemInit( T *ptr, T value, size_t size)
 {
-	DEBUG_HANDLE_ERROR(cudaMemset( ptr, value, size * sizeof(T)));
+	DEBUG_HANDLE_ERROR(hipMemset( ptr, value, size * sizeof(T)));
 };
 
 template< typename T>
 static inline
-void cudaMemInit( T *ptr, T value, size_t size, cudaStream_t &stream)
+void cudaMemInit( T *ptr, T value, size_t size, hipStream_t &stream)
 {
-	DEBUG_HANDLE_ERROR(cudaMemsetAsync( ptr, value, size * sizeof(T), stream));
+	DEBUG_HANDLE_ERROR(hipMemsetAsync( ptr, value, size * sizeof(T), stream));
 };
 
 #endif

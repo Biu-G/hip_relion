@@ -1,5 +1,5 @@
 #include <signal.h>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include "src/gpu_utils/cuda_settings.h"
 #include "src/gpu_utils/cuda_backprojector.h"
 #include "src/gpu_utils/cuda_device_utils.cuh"
@@ -32,9 +32,9 @@ size_t CudaBackprojector::setMdlDim(
 		padding_factor = paddingFactor;
 
 		//Allocate space for model
-		HANDLE_ERROR(cudaMalloc( (void**) &d_mdlReal,   mdlXYZ * sizeof(XFLOAT)));
-		HANDLE_ERROR(cudaMalloc( (void**) &d_mdlImag,   mdlXYZ * sizeof(XFLOAT)));
-		HANDLE_ERROR(cudaMalloc( (void**) &d_mdlWeight, mdlXYZ * sizeof(XFLOAT)));
+		HANDLE_ERROR(hipMalloc( (void**) &d_mdlReal,   mdlXYZ * sizeof(XFLOAT)));
+		HANDLE_ERROR(hipMalloc( (void**) &d_mdlImag,   mdlXYZ * sizeof(XFLOAT)));
+		HANDLE_ERROR(hipMalloc( (void**) &d_mdlWeight, mdlXYZ * sizeof(XFLOAT)));
 
 		allocaton_size = mdlXYZ * sizeof(XFLOAT) * 3;
 	}
@@ -58,21 +58,21 @@ void CudaBackprojector::initMdl()
 #endif
 
 	//Initiate model with zeros
-	DEBUG_HANDLE_ERROR(cudaMemset( d_mdlReal,   0, mdlXYZ * sizeof(XFLOAT)));
-	DEBUG_HANDLE_ERROR(cudaMemset( d_mdlImag,   0, mdlXYZ * sizeof(XFLOAT)));
-	DEBUG_HANDLE_ERROR(cudaMemset( d_mdlWeight, 0, mdlXYZ * sizeof(XFLOAT)));
+	DEBUG_HANDLE_ERROR(hipMemset( d_mdlReal,   0, mdlXYZ * sizeof(XFLOAT)));
+	DEBUG_HANDLE_ERROR(hipMemset( d_mdlImag,   0, mdlXYZ * sizeof(XFLOAT)));
+	DEBUG_HANDLE_ERROR(hipMemset( d_mdlWeight, 0, mdlXYZ * sizeof(XFLOAT)));
 }
 
 
 void CudaBackprojector::getMdlData(XFLOAT *r, XFLOAT *i, XFLOAT * w)
 {
-	DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream)); //Make sure to wait for remaining kernel executions
+	DEBUG_HANDLE_ERROR(hipStreamSynchronize(stream)); //Make sure to wait for remaining kernel executions
 
-	DEBUG_HANDLE_ERROR(cudaMemcpyAsync( r, d_mdlReal,   mdlXYZ * sizeof(XFLOAT), cudaMemcpyDeviceToHost, stream));
-	DEBUG_HANDLE_ERROR(cudaMemcpyAsync( i, d_mdlImag,   mdlXYZ * sizeof(XFLOAT), cudaMemcpyDeviceToHost, stream));
-	DEBUG_HANDLE_ERROR(cudaMemcpyAsync( w, d_mdlWeight, mdlXYZ * sizeof(XFLOAT), cudaMemcpyDeviceToHost, stream));
+	DEBUG_HANDLE_ERROR(hipMemcpyAsync( r, d_mdlReal,   mdlXYZ * sizeof(XFLOAT), hipMemcpyDeviceToHost, stream));
+	DEBUG_HANDLE_ERROR(hipMemcpyAsync( i, d_mdlImag,   mdlXYZ * sizeof(XFLOAT), hipMemcpyDeviceToHost, stream));
+	DEBUG_HANDLE_ERROR(hipMemcpyAsync( w, d_mdlWeight, mdlXYZ * sizeof(XFLOAT), hipMemcpyDeviceToHost, stream));
 
-	DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream)); //Wait for copy
+	DEBUG_HANDLE_ERROR(hipStreamSynchronize(stream)); //Wait for copy
 }
 
 void CudaBackprojector::clear()
@@ -90,9 +90,9 @@ void CudaBackprojector::clear()
 
 	if (d_mdlReal != NULL)
 	{
-		DEBUG_HANDLE_ERROR(cudaFree(d_mdlReal));
-		DEBUG_HANDLE_ERROR(cudaFree(d_mdlImag));
-		DEBUG_HANDLE_ERROR(cudaFree(d_mdlWeight));
+		DEBUG_HANDLE_ERROR(hipFree(d_mdlReal));
+		DEBUG_HANDLE_ERROR(hipFree(d_mdlImag));
+		DEBUG_HANDLE_ERROR(hipFree(d_mdlWeight));
 
 		d_mdlReal = d_mdlImag = d_mdlWeight = NULL;
 	}

@@ -1,7 +1,7 @@
 #ifndef CUDA_UTILS_CUB_CUH_
 #define CUDA_UTILS_CUB_CUH_
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include "src/acc/cuda/cuda_settings.h"
 #include "src/acc/cuda/cuda_mem_utils.h"
 #include <stdio.h>
@@ -30,18 +30,18 @@ if (ptr.getDevicePtr() == NULL)
 if (ptr.getAllocator() == NULL)
 	printf("DEBUG_WARNING: getArgMaxOnDevice called with null allocator.\n");
 #endif
-	AccPtr<cub::KeyValuePair<int, T> >  max_pair(1, ptr.getStream(), ptr.getAllocator());
+	AccPtr<hipcub::KeyValuePair<int, T> >  max_pair(1, ptr.getStream(), ptr.getAllocator());
 	max_pair.deviceAlloc();
 	size_t temp_storage_size = 0;
 
-	DEBUG_HANDLE_ERROR(cub::DeviceReduce::ArgMax( NULL, temp_storage_size, ~ptr, ~max_pair, ptr.getSize()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceReduce::ArgMax( NULL, temp_storage_size, ~ptr, ~max_pair, ptr.getSize()));
 
 	if(temp_storage_size==0)
 		temp_storage_size=1;
 
 	CudaCustomAllocator::Alloc* alloc = ptr.getAllocator()->alloc(temp_storage_size);
 
-	DEBUG_HANDLE_ERROR(cub::DeviceReduce::ArgMax( alloc->getPtr(), temp_storage_size, ~ptr, ~max_pair, ptr.getSize(), ptr.getStream()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceReduce::ArgMax( alloc->getPtr(), temp_storage_size, ~ptr, ~max_pair, ptr.getSize(), ptr.getStream()));
 
 	max_pair.cpToHost();
 	ptr.streamSync();
@@ -66,18 +66,18 @@ if (ptr.getDevicePtr() == NULL)
 if (ptr.getAllocator() == NULL)
 	printf("DEBUG_WARNING: getArgMinOnDevice called with null allocator.\n");
 #endif
-	AccPtr<cub::KeyValuePair<int, T> >  min_pair(1, ptr.getStream(), ptr.getAllocator());
+	AccPtr<hipcub::KeyValuePair<int, T> >  min_pair(1, ptr.getStream(), ptr.getAllocator());
 	min_pair.deviceAlloc();
 	size_t temp_storage_size = 0;
 
-	DEBUG_HANDLE_ERROR(cub::DeviceReduce::ArgMin( NULL, temp_storage_size, ~ptr, ~min_pair, ptr.getSize()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceReduce::ArgMin( NULL, temp_storage_size, ~ptr, ~min_pair, ptr.getSize()));
 
 	if(temp_storage_size==0)
 		temp_storage_size=1;
 
 	CudaCustomAllocator::Alloc* alloc = ptr.getAllocator()->alloc(temp_storage_size);
 
-	DEBUG_HANDLE_ERROR(cub::DeviceReduce::ArgMin( alloc->getPtr(), temp_storage_size, ~ptr, ~min_pair, ptr.getSize(), ptr.getStream()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceReduce::ArgMin( alloc->getPtr(), temp_storage_size, ~ptr, ~min_pair, ptr.getSize(), ptr.getStream()));
 
 	min_pair.cpToHost();
 	ptr.streamSync();
@@ -106,14 +106,14 @@ if (ptr.getAllocator() == NULL)
 	max_val.deviceAlloc();
 	size_t temp_storage_size = 0;
 
-	DEBUG_HANDLE_ERROR(cub::DeviceReduce::Max( NULL, temp_storage_size, ~ptr, ~max_val, ptr.getSize()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceReduce::Max( NULL, temp_storage_size, ~ptr, ~max_val, ptr.getSize()));
 
 	if(temp_storage_size==0)
 		temp_storage_size=1;
 
 	CudaCustomAllocator::Alloc* alloc = ptr.getAllocator()->alloc(temp_storage_size);
 
-	DEBUG_HANDLE_ERROR(cub::DeviceReduce::Max( alloc->getPtr(), temp_storage_size, ~ptr, ~max_val, ptr.getSize(), ptr.getStream()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceReduce::Max( alloc->getPtr(), temp_storage_size, ~ptr, ~max_val, ptr.getSize(), ptr.getStream()));
 
 	max_val.cpToHost();
 	ptr.streamSync();
@@ -138,14 +138,14 @@ if (ptr.getAllocator() == NULL)
 	min_val.deviceAlloc();
 	size_t temp_storage_size = 0;
 
-	DEBUG_HANDLE_ERROR(cub::DeviceReduce::Min( NULL, temp_storage_size, ~ptr, ~min_val, ptr.getSize()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceReduce::Min( NULL, temp_storage_size, ~ptr, ~min_val, ptr.getSize()));
 
 	if(temp_storage_size==0)
 		temp_storage_size=1;
 
 	CudaCustomAllocator::Alloc* alloc = ptr.getAllocator()->alloc(temp_storage_size);
 
-	DEBUG_HANDLE_ERROR(cub::DeviceReduce::Min( alloc->getPtr(), temp_storage_size, ~ptr, ~min_val, ptr.getSize(), ptr.getStream()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceReduce::Min( alloc->getPtr(), temp_storage_size, ~ptr, ~min_val, ptr.getSize(), ptr.getStream()));
 
 	min_val.cpToHost();
 	ptr.streamSync();
@@ -170,14 +170,14 @@ if (ptr.getAllocator() == NULL)
 	val.deviceAlloc();
 	size_t temp_storage_size = 0;
 
-	DEBUG_HANDLE_ERROR(cub::DeviceReduce::Sum( NULL, temp_storage_size, ~ptr, ~val, ptr.getSize()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceReduce::Sum( NULL, temp_storage_size, ~ptr, ~val, ptr.getSize()));
 
 	if(temp_storage_size==0)
 		temp_storage_size=1;
 
 	CudaCustomAllocator::Alloc* alloc = ptr.getAllocator()->alloc(temp_storage_size);
 
-	DEBUG_HANDLE_ERROR(cub::DeviceReduce::Sum( alloc->getPtr(), temp_storage_size, ~ptr, ~val, ptr.getSize(), ptr.getStream()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceReduce::Sum( alloc->getPtr(), temp_storage_size, ~ptr, ~val, ptr.getSize(), ptr.getStream()));
 
 	val.cpToHost();
 	ptr.streamSync();
@@ -200,16 +200,16 @@ if (in.getAllocator() == NULL)
 #endif
 	size_t temp_storage_size = 0;
 
-	cudaStream_t stream = in.getStream();
+	hipStream_t stream = in.getStream();
 
-	DEBUG_HANDLE_ERROR(cub::DeviceRadixSort::SortKeys( NULL, temp_storage_size, ~in, ~out, in.getSize()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceRadixSort::SortKeys( NULL, temp_storage_size, ~in, ~out, in.getSize()));
 
 	if(temp_storage_size==0)
 		temp_storage_size=1;
 
 	CudaCustomAllocator::Alloc* alloc = in.getAllocator()->alloc(temp_storage_size);
 
-	DEBUG_HANDLE_ERROR(cub::DeviceRadixSort::SortKeys( alloc->getPtr(), temp_storage_size, ~in, ~out, in.getSize(), 0, sizeof(T) * 8, stream));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceRadixSort::SortKeys( alloc->getPtr(), temp_storage_size, ~in, ~out, in.getSize(), 0, sizeof(T) * 8, stream));
 
 	alloc->markReadyEvent(stream);
 	alloc->doFreeWhenReady();
@@ -228,16 +228,16 @@ if (in.getAllocator() == NULL)
 #endif
 	size_t temp_storage_size = 0;
 
-	cudaStream_t stream = in.getStream();
+	hipStream_t stream = in.getStream();
 
-	DEBUG_HANDLE_ERROR(cub::DeviceRadixSort::SortKeysDescending( NULL, temp_storage_size, ~in, ~out, in.getSize()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceRadixSort::SortKeysDescending( NULL, temp_storage_size, ~in, ~out, in.getSize()));
 
 	if(temp_storage_size==0)
 		temp_storage_size=1;
 
 	CudaCustomAllocator::Alloc* alloc = in.getAllocator()->alloc(temp_storage_size);
 
-	DEBUG_HANDLE_ERROR(cub::DeviceRadixSort::SortKeysDescending( alloc->getPtr(), temp_storage_size, ~in, ~out, in.getSize(), 0, sizeof(T) * 8, stream));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceRadixSort::SortKeysDescending( alloc->getPtr(), temp_storage_size, ~in, ~out, in.getSize(), 0, sizeof(T) * 8, stream));
 
 	alloc->markReadyEvent(stream);
 	alloc->doFreeWhenReady();
@@ -299,22 +299,22 @@ if (in.getAllocator() == NULL)
 #endif
 	size_t temp_storage_size = 0;
 
-	cudaStream_t stream = in.getStream();
+	hipStream_t stream = in.getStream();
 
 	AccPtr<int>  num_selected_out(1, stream, in.getAllocator());
 	num_selected_out.deviceAlloc();
 
-	DEBUG_HANDLE_ERROR(cub::DeviceSelect::If(NULL, temp_storage_size, ~in, ~out, ~num_selected_out, in.getSize(), select_op, stream));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceSelect::If(NULL, temp_storage_size, ~in, ~out, ~num_selected_out, in.getSize(), select_op, stream));
 
 	if(temp_storage_size==0)
 		temp_storage_size=1;
 
 	CudaCustomAllocator::Alloc* alloc = in.getAllocator()->alloc(temp_storage_size);
 
-	DEBUG_HANDLE_ERROR(cub::DeviceSelect::If(alloc->getPtr(), temp_storage_size, ~in, ~out, ~num_selected_out, in.getSize(), select_op, stream));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceSelect::If(alloc->getPtr(), temp_storage_size, ~in, ~out, ~num_selected_out, in.getSize(), select_op, stream));
 
 	num_selected_out.cpToHost();
-	DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream));
+	DEBUG_HANDLE_ERROR(hipStreamSynchronize(stream));
 
 	in.getAllocator()->free(alloc);
 	return num_selected_out[0];
@@ -333,16 +333,16 @@ if (in.getAllocator() == NULL)
 #endif
 	size_t temp_storage_size = 0;
 
-	cudaStream_t stream = in.getStream();
+	hipStream_t stream = in.getStream();
 
-	DEBUG_HANDLE_ERROR(cub::DeviceScan::InclusiveSum( NULL, temp_storage_size, ~in, ~out, in.getSize()));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceScan::InclusiveSum( NULL, temp_storage_size, ~in, ~out, in.getSize()));
 
 	if(temp_storage_size==0)
 		temp_storage_size=1;
 
 	CudaCustomAllocator::Alloc* alloc = in.getAllocator()->alloc(temp_storage_size);
 
-	DEBUG_HANDLE_ERROR(cub::DeviceScan::InclusiveSum( alloc->getPtr(), temp_storage_size, ~in, ~out, in.getSize(), stream));
+	DEBUG_HANDLE_ERROR(hipcub::DeviceScan::InclusiveSum( alloc->getPtr(), temp_storage_size, ~in, ~out, in.getSize(), stream));
 
 	alloc->markReadyEvent(stream);
 	alloc->doFreeWhenReady();

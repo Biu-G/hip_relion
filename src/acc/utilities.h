@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef ACC_UTILITIES_H_
 #define ACC_UTILITIES_H_
 
@@ -48,10 +49,10 @@ static void multiply(int block_size, AccDataTypes::Image<T> &ptr, T value)
 }
 	
 template <typename T>
-static void multiply(int MultiBsize, int block_size, cudaStream_t stream, T *array, T value, size_t size)
+static void multiply(int MultiBsize, int block_size, hipStream_t stream, T *array, T value, size_t size)
 {
 #ifdef CUDA
-	CudaKernels::cuda_kernel_multi<T><<<MultiBsize,block_size,0,stream>>>(
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(CudaKernels::cuda_kernel_multi<T>), MultiBsize, block_size, 0, stream, 
 		array,
 		value,
 		size);
@@ -328,7 +329,7 @@ void powerClass(int		in_gridSize,
 {
 #ifdef CUDA
 	dim3 grid_size(in_gridSize);
-	cuda_kernel_powerClass<DATA3D><<<grid_size,in_blocksize,0,0>>>(g_image,
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_powerClass<DATA3D>), grid_size, in_blocksize, 0, 0, g_image,
 		g_spectrum,
 		image_size,
 		spectrum_size,
@@ -354,13 +355,13 @@ void powerClass(int		in_gridSize,
 
 template<bool invert>
 void acc_make_eulers_2D(int grid_size, int block_size,
-		cudaStream_t stream,
+		hipStream_t stream,
 		XFLOAT *alphas,
 		XFLOAT *eulers,
 		unsigned long orientation_num)
 {
 #ifdef CUDA
-	cuda_kernel_make_eulers_2D<invert><<<grid_size,block_size,0,stream>>>(
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_make_eulers_2D<invert>), grid_size, block_size, 0, stream, 
 		alphas,
 		eulers,
 		orientation_num);
@@ -372,7 +373,7 @@ void acc_make_eulers_2D(int grid_size, int block_size,
 
 template<bool invert,bool doL,bool doR>
 void acc_make_eulers_3D(int grid_size, int block_size,
-		cudaStream_t stream,
+		hipStream_t stream,
 		XFLOAT *alphas,
 		XFLOAT *betas,
 		XFLOAT *gammas,
@@ -382,7 +383,7 @@ void acc_make_eulers_3D(int grid_size, int block_size,
 		XFLOAT *R)
 {
 #ifdef CUDA
-	cuda_kernel_make_eulers_3D<invert,doL,doR><<<grid_size,block_size,0,stream>>>(
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_make_eulers_3D<invert,doL,doR>), grid_size, block_size, 0, stream, 
 		alphas,
 		betas,
 		gammas,
@@ -435,7 +436,7 @@ void InitValue(AccPtr<T> &data, T value)
 			value,
 			data.getSize(),
 			INIT_VALUE_BLOCK_SIZE);
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 #else
 	size_t Size = data.getSize();
 	for (size_t i=0; i < Size; i++)
@@ -460,7 +461,7 @@ void InitValue(AccPtr<T> &data, T value, size_t Size)
 }
 
 void centerFFT_2D(int grid_size, int batch_size, int block_size,
-				cudaStream_t stream,
+				hipStream_t stream,
 				XFLOAT *img_in,
 				size_t image_size,
 				int xdim,
@@ -478,7 +479,7 @@ void centerFFT_2D(int grid_size, int batch_size, int block_size,
 				int yshift);
 
 void centerFFT_3D(int grid_size, int batch_size, int block_size,
-				cudaStream_t stream,
+				hipStream_t stream,
 				XFLOAT *img_in,
 				size_t image_size,
 				int xdim,
@@ -491,7 +492,7 @@ void centerFFT_3D(int grid_size, int batch_size, int block_size,
 
 template<bool do_highpass>
 void frequencyPass(int grid_size, int block_size,
-				cudaStream_t stream,
+				hipStream_t stream,
 				ACCCOMPLEX *A,
 				long int ori_size,
 				size_t Xdim,
@@ -505,7 +506,7 @@ void frequencyPass(int grid_size, int block_size,
 {
 #ifdef CUDA
 	dim3 blocks(grid_size);
-	cuda_kernel_frequencyPass<do_highpass><<<blocks,block_size, 0, stream>>>(
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_frequencyPass<do_highpass>), blocks, block_size, 0, stream, 
 			A,
 			ori_size,
 			Xdim,
@@ -551,14 +552,14 @@ void kernel_wavg(
 		XFLOAT weight_norm,
 		XFLOAT significant_weight,
 		XFLOAT part_scale,
-		cudaStream_t stream)
+		hipStream_t stream)
 {
 #ifdef CUDA
 	//We only want as many blocks as there are chunks of orientations to be treated
 	//within the same block (this is done to reduce memory loads in the kernel).
 	dim3 block_dim = orientation_num;//ceil((float)orientation_num/(float)REF_GROUP_SIZE);
 	
-	cuda_kernel_wavg<REFCTF,REF3D,DATA3D,block_sz><<<block_dim,block_sz,(3*block_sz+9)*sizeof(XFLOAT),stream>>>(
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_wavg<REFCTF,REF3D,DATA3D,block_sz>), block_dim, block_sz, (3*block_sz+9)*sizeof(XFLOAT), stream, 
 		g_eulers,
 		projector,
 		image_size,
@@ -640,12 +641,11 @@ void diff2_coarse(
 		XFLOAT *g_diff2s,
 		unsigned long translation_num,
 		unsigned long image_size,
-		cudaStream_t stream
+		hipStream_t stream
 		)
 {
 #ifdef CUDA
-		cuda_kernel_diff2_coarse<REF3D, DATA3D, block_sz, eulers_per_block, prefetch_fraction>
-		<<<grid_size,block_size,0,stream>>>(
+		hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_diff2_coarse<REF3D, DATA3D, block_sz, eulers_per_block, prefetch_fraction>), grid_size, block_size, 0, stream, 
 			g_eulers,
 			trans_x,
 			trans_y,
@@ -722,13 +722,12 @@ void diff2_CC_coarse(
 		unsigned long translation_num,
 		unsigned long image_size,
 		XFLOAT exp_local_sqrtXi2,
-		cudaStream_t stream
+		hipStream_t stream
 		)
 {
 #ifdef CUDA
 	dim3 CCblocks(grid_size,translation_num);
-	cuda_kernel_diff2_CC_coarse<REF3D,DATA3D,block_sz>
-		<<<CCblocks,block_size,0,stream>>>(
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_diff2_CC_coarse<REF3D,DATA3D,block_sz>), CCblocks, block_size, 0, stream, 
 			g_eulers,
 			g_imgs_real,
 			g_imgs_imag,
@@ -796,13 +795,12 @@ void diff2_fine(
 		unsigned long *d_trans_idx,
 		unsigned long *d_job_idx,
 		unsigned long *d_job_num,
-		cudaStream_t stream
+		hipStream_t stream
 		)
 {
 #ifdef CUDA
 		dim3 block_dim = grid_size;
-		cuda_kernel_diff2_fine<REF3D,DATA3D, block_sz, chunk_sz>
-				<<<block_dim,block_size,0,stream>>>(
+		hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_diff2_fine<REF3D,DATA3D, block_sz, chunk_sz>), block_dim, block_size, 0, stream, 
 					g_eulers,
 					g_imgs_real,
 					g_imgs_imag,
@@ -886,13 +884,12 @@ void diff2_CC_fine(
 		unsigned long *d_trans_idx,
 		unsigned long *d_job_idx,
 		unsigned long *d_job_num,
-		cudaStream_t stream
+		hipStream_t stream
 		)
 {
 #ifdef CUDA
 	dim3 block_dim = grid_size;
-	cuda_kernel_diff2_CC_fine<REF3D,DATA3D,block_sz,chunk_sz>
-			<<<block_dim,block_size,0,stream>>>(
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_diff2_CC_fine<REF3D,DATA3D,block_sz,chunk_sz>), block_dim, block_size, 0, stream, 
 				g_eulers,
 				g_imgs_real,
 				g_imgs_imag,
@@ -1023,7 +1020,7 @@ void kernel_exponentiate_weights_fine(	int grid_size,
 										unsigned long *d_job_idx,
 										unsigned long *d_job_num,
 										long int job_num,
-										cudaStream_t stream);
+										hipStream_t stream);
 
 };  // namespace AccUtilities
 

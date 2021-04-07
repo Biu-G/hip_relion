@@ -1,7 +1,7 @@
 #ifndef CUDA_DEVICE_UTILS_CUH_
 #define CUDA_DEVICE_UTILS_CUH_
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include "src/gpu_utils/cuda_settings.h"
 
 #ifdef CUDA_DOUBLE_PRECISION

@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::WarpScanShfl provides SHFL-based variants of parallel prefix scan of items partitioned across a CUDA thread warp.
+ * hipcub::WarpScanShfl provides SHFL-based variants of parallel prefix scan of items partitioned across a CUDA thread warp.
  */
 
 #pragma once
@@ -114,7 +114,7 @@ struct WarpScanShfl
     /// Inclusive prefix scan step (specialized for summation across int32 types)
     __device__ __forceinline__ int InclusiveScanStep(
         int             input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
+        hipcub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
         int             first_lane,         ///< [in] Index of first lane in segment
         int             offset)             ///< [in] Up-offset to pull from
     {
@@ -150,7 +150,7 @@ struct WarpScanShfl
     /// Inclusive prefix scan step (specialized for summation across uint32 types)
     __device__ __forceinline__ unsigned int InclusiveScanStep(
         unsigned int    input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
+        hipcub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
         int             first_lane,         ///< [in] Index of first lane in segment
         int             offset)             ///< [in] Up-offset to pull from
     {
@@ -187,7 +187,7 @@ struct WarpScanShfl
     /// Inclusive prefix scan step (specialized for summation across fp32 types)
     __device__ __forceinline__ float InclusiveScanStep(
         float           input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
+        hipcub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
         int             first_lane,         ///< [in] Index of first lane in segment
         int             offset)             ///< [in] Up-offset to pull from
     {
@@ -224,7 +224,7 @@ struct WarpScanShfl
     /// Inclusive prefix scan step (specialized for summation across unsigned long long types)
     __device__ __forceinline__ unsigned long long InclusiveScanStep(
         unsigned long long  input,              ///< [in] Calling thread's input item.
-        cub::Sum            /*scan_op*/,        ///< [in] Binary scan operator
+        hipcub::Sum            /*scan_op*/,        ///< [in] Binary scan operator
         int             first_lane,         ///< [in] Index of first lane in segment
         int             offset)             ///< [in] Up-offset to pull from
     {
@@ -271,7 +271,7 @@ struct WarpScanShfl
     /// Inclusive prefix scan step (specialized for summation across long long types)
     __device__ __forceinline__ long long InclusiveScanStep(
         long long       input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
+        hipcub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
         int             first_lane,         ///< [in] Index of first lane in segment
         int             offset)             ///< [in] Up-offset to pull from
     {
@@ -318,7 +318,7 @@ struct WarpScanShfl
     /// Inclusive prefix scan step (specialized for summation across fp64 types)
     __device__ __forceinline__ double InclusiveScanStep(
         double          input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
+        hipcub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
         int             first_lane,         ///< [in] Index of first lane in segment
         int             offset)             ///< [in] Up-offset to pull from
     {
@@ -363,18 +363,18 @@ struct WarpScanShfl
 
 
 /*
-    /// Inclusive prefix scan (specialized for ReduceBySegmentOp<cub::Sum> across KeyValuePair<OffsetT, Value> types)
+    /// Inclusive prefix scan (specialized for ReduceBySegmentOp<hipcub::Sum> across KeyValuePair<OffsetT, Value> types)
     template <typename Value, typename OffsetT>
     __device__ __forceinline__ KeyValuePair<OffsetT, Value>InclusiveScanStep(
         KeyValuePair<OffsetT, Value>    input,              ///< [in] Calling thread's input item.
-        ReduceBySegmentOp<cub::Sum>     scan_op,            ///< [in] Binary scan operator
+        ReduceBySegmentOp<hipcub::Sum>     scan_op,            ///< [in] Binary scan operator
         int                             first_lane,         ///< [in] Index of first lane in segment
         int                             offset)             ///< [in] Up-offset to pull from
     {
         KeyValuePair<OffsetT, Value> output;
 
-        output.value = InclusiveScanStep(input.value, cub::Sum(), first_lane, offset, Int2Type<IntegerTraits<Value>::IS_SMALL_UNSIGNED>());
-        output.key = InclusiveScanStep(input.key, cub::Sum(), first_lane, offset, Int2Type<IntegerTraits<OffsetT>::IS_SMALL_UNSIGNED>());
+        output.value = InclusiveScanStep(input.value, hipcub::Sum(), first_lane, offset, Int2Type<IntegerTraits<Value>::IS_SMALL_UNSIGNED>());
+        output.key = InclusiveScanStep(input.key, hipcub::Sum(), first_lane, offset, Int2Type<IntegerTraits<OffsetT>::IS_SMALL_UNSIGNED>());
 
         if (input.key > 0)
             output.value = input.value;
@@ -575,7 +575,7 @@ struct WarpScanShfl
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
-        cub::Sum                /*scan_op*/,
+        hipcub::Sum                /*scan_op*/,
         Int2Type<true>          /*is_integer*/)
     {
         // initial value presumed 0
@@ -603,7 +603,7 @@ struct WarpScanShfl
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
-        cub::Sum                scan_op,
+        hipcub::Sum                scan_op,
         T                       initial_value,
         Int2Type<true>          /*is_integer*/)
     {

@@ -29,7 +29,7 @@
 
 /**
  * \file
- * cub::DeviceSegmentedReduce provides device-wide, parallel operations for computing a batched reduction across multiple sequences of data items residing within device-accessible memory.
+ * hipcub::DeviceSegmentedReduce provides device-wide, parallel operations for computing a batched reduction across multiple sequences of data items residing within device-accessible memory.
  */
 
 #pragma once
@@ -79,7 +79,7 @@ struct DeviceSegmentedReduce
      * The code snippet below illustrates a custom min-reduction of a device vector of \p int data elements.
      * \par
      * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+     * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
      *
      * // CustomMin functor
      * struct CustomMin
@@ -103,14 +103,14 @@ struct DeviceSegmentedReduce
      * // Determine temporary device storage requirements
      * void     *d_temp_storage = NULL;
      * size_t   temp_storage_bytes = 0;
-     * cub::DeviceSegmentedReduce::Reduce(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::Reduce(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1, min_op, initial_value);
      *
      * // Allocate temporary storage
-     * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+     * hipMalloc(&d_temp_storage, temp_storage_bytes);
      *
      * // Run reduction
-     * cub::DeviceSegmentedReduce::Reduce(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::Reduce(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1, min_op, initial_value);
      *
      * // d_out <-- [6, INT_MAX, 0]
@@ -130,7 +130,7 @@ struct DeviceSegmentedReduce
         typename            ReductionOp,
         typename            T>
     CUB_RUNTIME_FUNCTION
-    static cudaError_t Reduce(
+    static hipError_t Reduce(
         void                *d_temp_storage,                    ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
         size_t              &temp_storage_bytes,                ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
         InputIteratorT      d_in,                               ///< [in] Pointer to the input sequence of data items
@@ -140,7 +140,7 @@ struct DeviceSegmentedReduce
         OffsetIteratorT     d_end_offsets,                      ///< [in] Pointer to the sequence of ending offsets of length \p num_segments, such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.  If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>, the <em>i</em><sup>th</sup> is considered empty.
         ReductionOp         reduction_op,                       ///< [in] Binary reduction functor 
         T                   initial_value,                      ///< [in] Initial value of the reduction for each segment
-        cudaStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+        hipStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
         bool                debug_synchronous   = false)        ///< [in] <b>[optional]</b> Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
     {
         // Signed integer type for global offsets
@@ -177,7 +177,7 @@ struct DeviceSegmentedReduce
      * The code snippet below illustrates the sum reduction of a device vector of \p int data elements.
      * \par
      * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+     * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
      *
      * // Declare, allocate, and initialize device-accessible pointers for input and output
      * int num_segments;   // e.g., 3
@@ -189,14 +189,14 @@ struct DeviceSegmentedReduce
      * // Determine temporary device storage requirements
      * void     *d_temp_storage = NULL;
      * size_t   temp_storage_bytes = 0;
-     * cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1);
      *
      * // Allocate temporary storage
-     * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+     * hipMalloc(&d_temp_storage, temp_storage_bytes);
      *
      * // Run sum-reduction
-     * cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1);
      *
      * // d_out <-- [21, 0, 17]
@@ -212,7 +212,7 @@ struct DeviceSegmentedReduce
         typename            OutputIteratorT,
         typename            OffsetIteratorT>
     CUB_RUNTIME_FUNCTION
-    static cudaError_t Sum(
+    static hipError_t Sum(
         void                *d_temp_storage,                    ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
         size_t              &temp_storage_bytes,                ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
         InputIteratorT      d_in,                               ///< [in] Pointer to the input sequence of data items
@@ -220,7 +220,7 @@ struct DeviceSegmentedReduce
         int                 num_segments,                       ///< [in] The number of segments that comprise the sorting data
         OffsetIteratorT     d_begin_offsets,                    ///< [in] Pointer to the sequence of beginning offsets of length \p num_segments, such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
         OffsetIteratorT     d_end_offsets,                      ///< [in] Pointer to the sequence of ending offsets of length \p num_segments, such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.  If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>, the <em>i</em><sup>th</sup> is considered empty.
-        cudaStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+        hipStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
         bool                debug_synchronous   = false)        ///< [in] <b>[optional]</b> Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
     {
         // Signed integer type for global offsets
@@ -231,7 +231,7 @@ struct DeviceSegmentedReduce
             typename std::iterator_traits<InputIteratorT>::value_type,                                          // ... then the input iterator's value type,
             typename std::iterator_traits<OutputIteratorT>::value_type>::Type OutputT;                          // ... else the output iterator's value type
 
-        return DispatchSegmentedReduce<InputIteratorT,  OutputIteratorT, OffsetIteratorT, OffsetT, cub::Sum>::Dispatch(
+        return DispatchSegmentedReduce<InputIteratorT,  OutputIteratorT, OffsetIteratorT, OffsetT, hipcub::Sum>::Dispatch(
             d_temp_storage,
             temp_storage_bytes,
             d_in,
@@ -239,7 +239,7 @@ struct DeviceSegmentedReduce
             num_segments,
             d_begin_offsets,
             d_end_offsets,
-            cub::Sum(),
+            hipcub::Sum(),
             OutputT(),            // zero-initialize
             stream,
             debug_synchronous);
@@ -262,7 +262,7 @@ struct DeviceSegmentedReduce
      * The code snippet below illustrates the min-reduction of a device vector of \p int data elements.
      * \par
      * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+     * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
      *
      * // Declare, allocate, and initialize device-accessible pointers for input and output
      * int num_segments;   // e.g., 3
@@ -274,14 +274,14 @@ struct DeviceSegmentedReduce
      * // Determine temporary device storage requirements
      * void     *d_temp_storage = NULL;
      * size_t   temp_storage_bytes = 0;
-     * cub::DeviceSegmentedReduce::Min(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::Min(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1);
      *
      * // Allocate temporary storage
-     * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+     * hipMalloc(&d_temp_storage, temp_storage_bytes);
      *
      * // Run min-reduction
-     * cub::DeviceSegmentedReduce::Min(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::Min(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1);
      *
      * // d_out <-- [6, INT_MAX, 0]
@@ -297,7 +297,7 @@ struct DeviceSegmentedReduce
         typename            OutputIteratorT,
         typename            OffsetIteratorT>
     CUB_RUNTIME_FUNCTION
-    static cudaError_t Min(
+    static hipError_t Min(
         void                *d_temp_storage,                    ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
         size_t              &temp_storage_bytes,                ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
         InputIteratorT      d_in,                               ///< [in] Pointer to the input sequence of data items
@@ -305,7 +305,7 @@ struct DeviceSegmentedReduce
         int                 num_segments,                       ///< [in] The number of segments that comprise the sorting data
         OffsetIteratorT     d_begin_offsets,                    ///< [in] Pointer to the sequence of beginning offsets of length \p num_segments, such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
         OffsetIteratorT     d_end_offsets,                      ///< [in] Pointer to the sequence of ending offsets of length \p num_segments, such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.  If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>, the <em>i</em><sup>th</sup> is considered empty.
-        cudaStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+        hipStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
         bool                debug_synchronous   = false)        ///< [in] <b>[optional]</b> Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
     {
         // Signed integer type for global offsets
@@ -314,7 +314,7 @@ struct DeviceSegmentedReduce
         // The input value type
         typedef typename std::iterator_traits<InputIteratorT>::value_type InputT;
 
-        return DispatchSegmentedReduce<InputIteratorT,  OutputIteratorT, OffsetIteratorT, OffsetT, cub::Min>::Dispatch(
+        return DispatchSegmentedReduce<InputIteratorT,  OutputIteratorT, OffsetIteratorT, OffsetT, hipcub::Min>::Dispatch(
             d_temp_storage,
             temp_storage_bytes,
             d_in,
@@ -322,7 +322,7 @@ struct DeviceSegmentedReduce
             num_segments,
             d_begin_offsets,
             d_end_offsets,
-            cub::Min(),
+            hipcub::Min(),
             Traits<InputT>::Max(),    // replace with std::numeric_limits<T>::max() when C++11 support is more prevalent
             stream,
             debug_synchronous);
@@ -333,7 +333,7 @@ struct DeviceSegmentedReduce
      * \brief Finds the first device-wide minimum in each segment using the less-than ('<') operator, also returning the in-segment index of that item.
      *
      * \par
-     * - The output value type of \p d_out is cub::KeyValuePair <tt><int, T></tt> (assuming the value type of \p d_in is \p T)
+     * - The output value type of \p d_out is hipcub::KeyValuePair <tt><int, T></tt> (assuming the value type of \p d_in is \p T)
      *   - The minimum of the <em>i</em><sup>th</sup> segment is written to <tt>d_out[i].value</tt> and its offset in that segment is written to <tt>d_out[i].key</tt>.
      *   - The <tt>{1, std::numeric_limits<T>::max()}</tt> tuple is produced for zero-length inputs
      * - When input a contiguous sequence of segments, a single sequence
@@ -347,7 +347,7 @@ struct DeviceSegmentedReduce
      * The code snippet below illustrates the argmin-reduction of a device vector of \p int data elements.
      * \par
      * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+     * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
      *
      * // Declare, allocate, and initialize device-accessible pointers for input and output
      * int                      num_segments;   // e.g., 3
@@ -359,14 +359,14 @@ struct DeviceSegmentedReduce
      * // Determine temporary device storage requirements
      * void     *d_temp_storage = NULL;
      * size_t   temp_storage_bytes = 0;
-     * cub::DeviceSegmentedReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1);
      *
      * // Allocate temporary storage
-     * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+     * hipMalloc(&d_temp_storage, temp_storage_bytes);
      *
      * // Run argmin-reduction
-     * cub::DeviceSegmentedReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1);
      *
      * // d_out <-- [{1,6}, {1,INT_MAX}, {2,0}]
@@ -382,7 +382,7 @@ struct DeviceSegmentedReduce
         typename            OutputIteratorT,
         typename            OffsetIteratorT>
     CUB_RUNTIME_FUNCTION
-    static cudaError_t ArgMin(
+    static hipError_t ArgMin(
         void                *d_temp_storage,                    ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
         size_t              &temp_storage_bytes,                ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
         InputIteratorT      d_in,                               ///< [in] Pointer to the input sequence of data items
@@ -390,7 +390,7 @@ struct DeviceSegmentedReduce
         int                 num_segments,                       ///< [in] The number of segments that comprise the sorting data
         OffsetIteratorT     d_begin_offsets,                    ///< [in] Pointer to the sequence of beginning offsets of length \p num_segments, such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
         OffsetIteratorT     d_end_offsets,                      ///< [in] Pointer to the sequence of ending offsets of length \p num_segments, such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.  If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>, the <em>i</em><sup>th</sup> is considered empty.
-        cudaStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+        hipStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
         bool                debug_synchronous   = false)        ///< [in] <b>[optional]</b> Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
     {
         // Signed integer type for global offsets
@@ -414,7 +414,7 @@ struct DeviceSegmentedReduce
         // Initial value
         OutputTupleT initial_value(1, Traits<InputValueT>::Max());   // replace with std::numeric_limits<T>::max() when C++11 support is more prevalent
 
-        return DispatchSegmentedReduce<ArgIndexInputIteratorT,  OutputIteratorT, OffsetIteratorT, OffsetT, cub::ArgMin>::Dispatch(
+        return DispatchSegmentedReduce<ArgIndexInputIteratorT,  OutputIteratorT, OffsetIteratorT, OffsetT, hipcub::ArgMin>::Dispatch(
             d_temp_storage,
             temp_storage_bytes,
             d_indexed_in,
@@ -422,7 +422,7 @@ struct DeviceSegmentedReduce
             num_segments,
             d_begin_offsets,
             d_end_offsets,
-            cub::ArgMin(),
+            hipcub::ArgMin(),
             initial_value,
             stream,
             debug_synchronous);
@@ -445,7 +445,7 @@ struct DeviceSegmentedReduce
      * The code snippet below illustrates the max-reduction of a device vector of \p int data elements.
      * \par
      * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/device/device_radix_sort.cuh>
+     * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_radix_sort.cuh>
      *
      * // Declare, allocate, and initialize device-accessible pointers for input and output
      * int num_segments;   // e.g., 3
@@ -457,14 +457,14 @@ struct DeviceSegmentedReduce
      * // Determine temporary device storage requirements
      * void     *d_temp_storage = NULL;
      * size_t   temp_storage_bytes = 0;
-     * cub::DeviceSegmentedReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1);
      *
      * // Allocate temporary storage
-     * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+     * hipMalloc(&d_temp_storage, temp_storage_bytes);
      *
      * // Run max-reduction
-     * cub::DeviceSegmentedReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1);
      *
      * // d_out <-- [8, INT_MIN, 9]
@@ -480,7 +480,7 @@ struct DeviceSegmentedReduce
         typename            OutputIteratorT,
         typename            OffsetIteratorT>
     CUB_RUNTIME_FUNCTION
-    static cudaError_t Max(
+    static hipError_t Max(
         void                *d_temp_storage,                    ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
         size_t              &temp_storage_bytes,                ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
         InputIteratorT      d_in,                               ///< [in] Pointer to the input sequence of data items
@@ -488,7 +488,7 @@ struct DeviceSegmentedReduce
         int                 num_segments,                       ///< [in] The number of segments that comprise the sorting data
         OffsetIteratorT     d_begin_offsets,                    ///< [in] Pointer to the sequence of beginning offsets of length \p num_segments, such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
         OffsetIteratorT     d_end_offsets,                      ///< [in] Pointer to the sequence of ending offsets of length \p num_segments, such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.  If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>, the <em>i</em><sup>th</sup> is considered empty.
-        cudaStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+        hipStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
         bool                debug_synchronous   = false)        ///< [in] <b>[optional]</b> Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
     {
         // Signed integer type for global offsets
@@ -497,7 +497,7 @@ struct DeviceSegmentedReduce
         // The input value type
         typedef typename std::iterator_traits<InputIteratorT>::value_type InputT;
 
-        return DispatchSegmentedReduce<InputIteratorT,  OutputIteratorT, OffsetIteratorT, OffsetT, cub::Max>::Dispatch(
+        return DispatchSegmentedReduce<InputIteratorT,  OutputIteratorT, OffsetIteratorT, OffsetT, hipcub::Max>::Dispatch(
             d_temp_storage,
             temp_storage_bytes,
             d_in,
@@ -505,7 +505,7 @@ struct DeviceSegmentedReduce
             num_segments,
             d_begin_offsets,
             d_end_offsets,
-            cub::Max(),
+            hipcub::Max(),
             Traits<InputT>::Lowest(),    // replace with std::numeric_limits<T>::lowest() when C++11 support is more prevalent
             stream,
             debug_synchronous);
@@ -516,7 +516,7 @@ struct DeviceSegmentedReduce
      * \brief Finds the first device-wide maximum in each segment using the greater-than ('>') operator, also returning the in-segment index of that item
      *
      * \par
-     * - The output value type of \p d_out is cub::KeyValuePair <tt><int, T></tt> (assuming the value type of \p d_in is \p T)
+     * - The output value type of \p d_out is hipcub::KeyValuePair <tt><int, T></tt> (assuming the value type of \p d_in is \p T)
      *   - The maximum of the <em>i</em><sup>th</sup> segment is written to <tt>d_out[i].value</tt> and its offset in that segment is written to <tt>d_out[i].key</tt>.
      *   - The <tt>{1, std::numeric_limits<T>::lowest()}</tt> tuple is produced for zero-length inputs
      * - When input a contiguous sequence of segments, a single sequence
@@ -530,7 +530,7 @@ struct DeviceSegmentedReduce
      * The code snippet below illustrates the argmax-reduction of a device vector of \p int data elements.
      * \par
      * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/device/device_reduce.cuh>
+     * #include <hipcub/hipcub.hpp>   // or equivalently <cub/device/device_reduce.cuh>
      *
      * // Declare, allocate, and initialize device-accessible pointers for input and output
      * int                      num_segments;   // e.g., 3
@@ -542,14 +542,14 @@ struct DeviceSegmentedReduce
      * // Determine temporary device storage requirements
      * void     *d_temp_storage = NULL;
      * size_t   temp_storage_bytes = 0;
-     * cub::DeviceSegmentedReduce::ArgMax(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::ArgMax(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1);
      *
      * // Allocate temporary storage
-     * cudaMalloc(&d_temp_storage, temp_storage_bytes);
+     * hipMalloc(&d_temp_storage, temp_storage_bytes);
      *
      * // Run argmax-reduction
-     * cub::DeviceSegmentedReduce::ArgMax(d_temp_storage, temp_storage_bytes, d_in, d_out,
+     * hipcub::DeviceSegmentedReduce::ArgMax(d_temp_storage, temp_storage_bytes, d_in, d_out,
      *     num_segments, d_offsets, d_offsets + 1);
      *
      * // d_out <-- [{0,8}, {1,INT_MIN}, {3,9}]
@@ -565,7 +565,7 @@ struct DeviceSegmentedReduce
         typename            OutputIteratorT,
         typename            OffsetIteratorT>
     CUB_RUNTIME_FUNCTION
-    static cudaError_t ArgMax(
+    static hipError_t ArgMax(
         void                *d_temp_storage,                    ///< [in] %Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
         size_t              &temp_storage_bytes,                ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
         InputIteratorT      d_in,                               ///< [in] Pointer to the input sequence of data items
@@ -573,7 +573,7 @@ struct DeviceSegmentedReduce
         int                 num_segments,                       ///< [in] The number of segments that comprise the sorting data
         OffsetIteratorT     d_begin_offsets,                    ///< [in] Pointer to the sequence of beginning offsets of length \p num_segments, such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
         OffsetIteratorT     d_end_offsets,                      ///< [in] Pointer to the sequence of ending offsets of length \p num_segments, such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup> data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.  If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>, the <em>i</em><sup>th</sup> is considered empty.
-        cudaStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+        hipStream_t        stream              = 0,            ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
         bool                debug_synchronous   = false)        ///< [in] <b>[optional]</b> Whether or not to synchronize the stream after every kernel launch to check for errors.  Also causes launch configurations to be printed to the console.  Default is \p false.
     {
         // Signed integer type for global offsets
@@ -597,7 +597,7 @@ struct DeviceSegmentedReduce
         // Initial value
         OutputTupleT initial_value(1, Traits<InputValueT>::Lowest());     // replace with std::numeric_limits<T>::lowest() when C++11 support is more prevalent
 
-        return DispatchSegmentedReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetIteratorT, OffsetT, cub::ArgMax>::Dispatch(
+        return DispatchSegmentedReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetIteratorT, OffsetT, hipcub::ArgMax>::Dispatch(
             d_temp_storage,
             temp_storage_bytes,
             d_indexed_in,
@@ -605,7 +605,7 @@ struct DeviceSegmentedReduce
             num_segments,
             d_begin_offsets,
             d_end_offsets,
-            cub::ArgMax(),
+            hipcub::ArgMax(),
             initial_value,
             stream,
             debug_synchronous);

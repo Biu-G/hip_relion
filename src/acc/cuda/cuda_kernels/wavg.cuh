@@ -1,7 +1,8 @@
+#include "hip/hip_runtime.h"
 #ifndef CUDA_WAVG_KERNEL_CUH_
 #define CUDA_WAVG_KERNEL_CUH_
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -36,7 +37,7 @@ __global__ void cuda_kernel_wavg(
 	int bid = blockIdx.x; //block ID
 	int tid = threadIdx.x;
 
-	extern __shared__ XFLOAT buffer[];
+	HIP_DYNAMIC_SHARED( XFLOAT, buffer)
 
 	unsigned pass_num(ceilfracf(image_size,block_sz)),pixel;
 	XFLOAT * s_wdiff2s_parts	= &buffer[0];

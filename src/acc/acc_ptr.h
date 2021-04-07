@@ -4,7 +4,7 @@
 #include "src/acc/settings.h"
 #ifdef CUDA
 #include "src/acc/cuda/cuda_settings.h"
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include "src/acc/cuda/custom_allocator.cuh"
 #include "src/acc/cuda/cuda_mem_utils.h"
 #include "src/acc/cuda/shortcuts.cuh"
@@ -53,7 +53,7 @@ enum AccType {accUNSET, accCUDA, accCPU};
 
 
 #ifdef CUDA
-typedef cudaStream_t StreamType;
+typedef hipStream_t StreamType;
 typedef CudaCustomAllocator AllocatorType;
 typedef CudaCustomAllocator::Alloc AllocationType;
 #else
@@ -784,7 +784,7 @@ public:
 	{
 #ifdef CUDA
 		if (accType == accCUDA)
-			DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream));
+			DEBUG_HANDLE_ERROR(hipStreamSynchronize(stream));
 #endif
 	}
 
@@ -881,7 +881,7 @@ public:
 			alloc->doFreeWhenReady();
 			alloc = NULL;
 
-//			DEBUG_HANDLE_ERROR(cudaFree(dPtr));
+//			DEBUG_HANDLE_ERROR(hipFree(dPtr));
 
 			dPtr = NULL;
 		}

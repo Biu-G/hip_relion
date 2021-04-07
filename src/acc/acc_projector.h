@@ -5,7 +5,7 @@
 //#include "src/acc/cuda/cuda_settings.h"
 //#include "src/acc/cuda/cuda_mem_utils.h"
 #include "src/acc/acc_ptr.h"
-//#include <cuda_runtime.h>
+//#include <hip/hip_runtime.h>
 //#include "src/acc/cuda/cuda_kernels/cuda_device_utils.cuh"
 #ifndef CUDA
 #include <complex>
@@ -25,8 +25,8 @@ class AccProjector
 #ifndef PROJECTOR_NO_TEXTURES
 
 	XFLOAT *texArrayReal2D, *texArrayImag2D;
-	cudaArray_t *texArrayReal, *texArrayImag;
-	cudaTextureObject_t *mdlReal, *mdlImag;
+	hipArray_t *texArrayReal, *texArrayImag;
+	hipTextureObject_t *mdlReal, *mdlImag;
 
 	size_t pitch2D;
 #else

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2017, NVIDIA CORPORATION.  All rights reserved.
@@ -219,7 +220,7 @@ __device__ __forceinline__ unsigned int IADD3(unsigned int x, unsigned int y, un
  * The code snippet below illustrates byte-permute.
  * \par
  * \code
- * #include <cub/cub.cuh>
+ * #include <hipcub/hipcub.hpp>
  *
  * __global__ void ExampleKernel(...)
  * {
@@ -492,7 +493,7 @@ __device__ __forceinline__ unsigned int LaneMaskGe()
  * predecessor of its predecessor.
  * \par
  * \code
- * #include <cub/cub.cuh>   // or equivalently <cub/util_ptx.cuh>
+ * #include <hipcub/hipcub.hpp>   // or equivalently <cub/util_ptx.cuh>
  *
  * __global__ void ExampleKernel(...)
  * {
@@ -550,7 +551,7 @@ __device__ __forceinline__ T ShuffleUp(
  * successor of its successor.
  * \par
  * \code
- * #include <cub/cub.cuh>   // or equivalently <cub/util_ptx.cuh>
+ * #include <hipcub/hipcub.hpp>   // or equivalently <cub/util_ptx.cuh>
  *
  * __global__ void ExampleKernel(...)
  * {
@@ -611,7 +612,7 @@ __device__ __forceinline__ T ShuffleDown(
  *
  * \par
  * \code
- * #include <cub/cub.cuh>   // or equivalently <cub/util_ptx.cuh>
+ * #include <hipcub/hipcub.hpp>   // or equivalently <cub/util_ptx.cuh>
  *
  * __global__ void ExampleKernel(...)
  * {

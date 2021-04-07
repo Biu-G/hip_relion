@@ -18,7 +18,7 @@
 #endif
 #ifdef ALTCPU
 	#ifndef CUDA
-		typedef float cudaStream_t;
+		typedef float hipStream_t;
 		typedef double CudaCustomAllocator;
 		#define cudaStreamPerThread 0
 	#endif

@@ -1,6 +1,7 @@
+#include "hip/hip_runtime.h"
 /*
 #undef ALTCPU
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include "src/acc/cuda/cuda_settings.h"
 #include "src/acc/cuda/cuda_kernels/BP.cuh"
 #include "src/macros.h"
@@ -312,9 +313,9 @@ void runWavgKernel(
 		XFLOAT part_scale,
 		bool refs_are_ctf_corrected,
 		bool data_is_3D,
-		cudaStream_t stream)
+		hipStream_t stream)
 {
-	//cudaFuncSetCacheConfig(cuda_kernel_wavg_fast, cudaFuncCachePreferShared);
+	//hipFuncSetCacheConfig(reinterpret_cast<const void*>(cuda_kernel_wavg_fast), hipFuncCachePreferShared);
 
 	if (refs_are_ctf_corrected)
 	{
@@ -454,7 +455,7 @@ void runWavgKernel(
 				stream
 				);
 	}
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 }
 
 void runBackProjectKernel(
@@ -478,13 +479,13 @@ void runBackProjectKernel(
 		unsigned long imageCount,
 		bool data_is_3D,
 		bool do_sgd,
-		cudaStream_t optStream)
+		hipStream_t optStream)
 {
 
 	if(BP.mdlZ==1)
 	{
 #ifdef CUDA
-		cuda_kernel_backproject2D<<<imageCount,BP_2D_BLOCK_SIZE,0,optStream>>>(
+		hipLaunchKernelGGL(cuda_kernel_backproject2D, imageCount, BP_2D_BLOCK_SIZE, 0, optStream, 
 				d_img_real, d_img_imag,
 				trans_x, trans_y,
 				d_weights, d_Minvsigma2s, d_ctfs,
@@ -493,7 +494,7 @@ void runBackProjectKernel(
 				BP.maxR, BP.maxR2, BP.padding_factor,
 				imgX, imgY, imgX*imgY,
 				BP.mdlX, BP.mdlInitY);
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
 #else
 	CpuKernels::backproject2D(imageCount, BP_2D_BLOCK_SIZE,
 				d_img_real, d_img_imag,
@@ -512,7 +513,7 @@ void runBackProjectKernel(
 		{
 			if(data_is_3D)
 #ifdef CUDA
-				cuda_kernel_backprojectSGD<true><<<imageCount,BP_DATA3D_BLOCK_SIZE,0,optStream>>>(
+				hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_backprojectSGD<true>), imageCount, BP_DATA3D_BLOCK_SIZE, 0, optStream, 
 					projector, d_img_real, d_img_imag,
 					trans_x, trans_y, trans_z,
 					d_weights, d_Minvsigma2s, d_ctfs,
@@ -534,7 +535,7 @@ void runBackProjectKernel(
 #endif
 			else
 #ifdef CUDA
-				cuda_kernel_backprojectSGD<false><<<imageCount,BP_REF3D_BLOCK_SIZE,0,optStream>>>(
+				hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_backprojectSGD<false>), imageCount, BP_REF3D_BLOCK_SIZE, 0, optStream, 
 					projector, d_img_real, d_img_imag,
 					trans_x, trans_y, trans_z,
 					d_weights, d_Minvsigma2s, d_ctfs,
@@ -559,7 +560,7 @@ void runBackProjectKernel(
 		{
 			if(data_is_3D)
 #ifdef CUDA
-				cuda_kernel_backproject3D<true><<<imageCount,BP_DATA3D_BLOCK_SIZE,0,optStream>>>(
+				hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_backproject3D<true>), imageCount, BP_DATA3D_BLOCK_SIZE, 0, optStream, 
 					d_img_real, d_img_imag,
 					trans_x, trans_y, trans_z,
 					d_weights, d_Minvsigma2s, d_ctfs,
@@ -581,7 +582,7 @@ void runBackProjectKernel(
 #endif
 			else
 #ifdef CUDA
-				cuda_kernel_backproject3D<false><<<imageCount,BP_REF3D_BLOCK_SIZE,0,optStream>>>(
+				hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_backproject3D<false>), imageCount, BP_REF3D_BLOCK_SIZE, 0, optStream, 
 					d_img_real, d_img_imag,
 					trans_x, trans_y, trans_z,
 					d_weights, d_Minvsigma2s, d_ctfs,
@@ -614,7 +615,7 @@ void runBackProjectKernel(
 #endif
 #endif
 		} // do_sgd is false
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
 	}
 }
 
@@ -626,20 +627,20 @@ void mapAllWeightsToMweights(
 		XFLOAT * d_mweights, //Mweight
 		unsigned long orientation_num, //projectorPlan.orientation_num
 		unsigned long translation_num, //translation_num
-		cudaStream_t stream
+		hipStream_t stream
 		)
 {
 	size_t combinations = orientation_num*translation_num;
 	int grid_size = ceil((float)(combinations)/(float)WEIGHT_MAP_BLOCK_SIZE);
 #ifdef CUDA
-	cuda_kernel_allweights_to_mweights<<< grid_size, WEIGHT_MAP_BLOCK_SIZE, 0, stream >>>(
+	hipLaunchKernelGGL(cuda_kernel_allweights_to_mweights, grid_size, WEIGHT_MAP_BLOCK_SIZE, 0, stream , 
 			d_iorient,
 			d_allweights,
 			d_mweights,
 			orientation_num,
 			translation_num,
 			WEIGHT_MAP_BLOCK_SIZE);
-	LAUNCH_HANDLE_ERROR(cudaGetLastError());
+	LAUNCH_HANDLE_ERROR(hipGetLastError());
 #else
 	for (size_t i=0; i < combinations; i++)
 		d_mweights[d_iorient[i/translation_num] * translation_num + i%translation_num] =
@@ -662,7 +663,7 @@ void runDiff2KernelCoarse(
 		long unsigned orientation_num,
 		long unsigned translation_num,
 		long unsigned image_size,
-		cudaStream_t stream,
+		hipStream_t stream,
 		bool do_CC,
 		bool data_is_3D)
 {
@@ -1033,7 +1034,7 @@ void runDiff2KernelCoarse(
 						translation_num,
 						image_size,
 						stream);
-				LAUNCH_HANDLE_ERROR(cudaGetLastError());
+				LAUNCH_HANDLE_ERROR(hipGetLastError());
 			}
 
 			if (rest != 0)
@@ -1070,7 +1071,7 @@ void runDiff2KernelCoarse(
 						translation_num,
 						image_size,
 						stream);
-				LAUNCH_HANDLE_ERROR(cudaGetLastError());
+				LAUNCH_HANDLE_ERROR(hipGetLastError());
 			}
 		}  // projector.mdlZ==0
 	}  // !do_CC
@@ -1130,7 +1131,7 @@ void runDiff2KernelCoarse(
 				image_size,
 				local_sqrtXi2,
 				stream);
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
 	} // do_CC
 }
 
@@ -1158,7 +1159,7 @@ void runDiff2KernelFine(
 		unsigned long image_size,
 		int ipart,
 		int exp_iclass,
-		cudaStream_t stream,
+		hipStream_t stream,
 		long unsigned job_num_count,
 		bool do_CC,
 		bool data_is_3D)
@@ -1238,7 +1239,7 @@ void runDiff2KernelFine(
 					job_idx,
 					job_num,
 					stream);
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
     }
     else
     {
@@ -1316,7 +1317,7 @@ void runDiff2KernelFine(
 				job_idx,
 				job_num,
 				stream);
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
     }
 
 }
@@ -1350,7 +1351,7 @@ void runCollect2jobs(	int grid_dim,
 #ifdef CUDA
 	dim3 numblocks(grid_dim);
 	size_t shared_buffer = sizeof(XFLOAT)*SUMW_BLOCK_SIZE*5; // x+y+z+myp+weights
-	cuda_kernel_collect2jobs<true><<<numblocks,SUMW_BLOCK_SIZE,shared_buffer>>>(
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_collect2jobs<true>), numblocks, SUMW_BLOCK_SIZE, shared_buffer, 0, 
 			oo_otrans_x,          // otrans-size -> make const
 			oo_otrans_y,          // otrans-size -> make const
 			oo_otrans_z,          // otrans-size -> make const
@@ -1402,7 +1403,7 @@ void runCollect2jobs(	int grid_dim,
 #ifdef CUDA
 	dim3 numblocks(grid_dim);
 	size_t shared_buffer = sizeof(XFLOAT)*SUMW_BLOCK_SIZE*4; // x+y+myp+weights
-	cuda_kernel_collect2jobs<false><<<numblocks,SUMW_BLOCK_SIZE,shared_buffer>>>(
+	hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_collect2jobs<false>), numblocks, SUMW_BLOCK_SIZE, shared_buffer, 0, 
 			oo_otrans_x,          // otrans-size -> make const
 			oo_otrans_y,          // otrans-size -> make const
 			oo_otrans_z,          // otrans-size -> make const
@@ -1457,7 +1458,7 @@ void runCollect2jobs(	int grid_dim,
 //		XFLOAT *d_out_imag,
 //		unsigned iX, unsigned iY, unsigned iZ, //Input dimensions
 //		unsigned oX, unsigned oY, unsigned oZ,  //Output dimensions
-//		cudaStream_t stream
+//		hipStream_t stream
 //		)
 //{
 //	if (iX > 1 && iY/2 + 1 != iX)
@@ -1474,7 +1475,7 @@ void runCollect2jobs(	int grid_dim,
 //		long int max_r2 = (iX - 1) * (iX - 1);
 //
 //		unsigned grid_dim = ceil((float)(iX*iY*iZ) / (float) WINDOW_FT_BLOCK_SIZE);
-//		cuda_kernel_window_fourier_transform<true><<< grid_dim, WINDOW_FT_BLOCK_SIZE, 0, stream  >>>(
+//		hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_window_fourier_transform<true>), grid_dim, WINDOW_FT_BLOCK_SIZE, 0, stream  , 
 //				d_in_real,
 //				d_in_imag,
 //				d_out_real,
@@ -1487,7 +1488,7 @@ void runCollect2jobs(	int grid_dim,
 //	else
 //	{
 //		unsigned grid_dim = ceil((float)(oX*oY*oZ) / (float) WINDOW_FT_BLOCK_SIZE);
-//		cuda_kernel_window_fourier_transform<false><<< grid_dim, WINDOW_FT_BLOCK_SIZE, 0, stream  >>>(
+//		hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_window_fourier_transform<false>), grid_dim, WINDOW_FT_BLOCK_SIZE, 0, stream  , 
 //				d_in_real,
 //				d_in_imag,
 //				d_out_real,
@@ -1506,7 +1507,7 @@ void windowFourierTransform2(
 		size_t oX, size_t oY, size_t oZ,  //Output dimensions
 		size_t Npsi,
 		size_t pos,
-		cudaStream_t stream)
+		hipStream_t stream)
 {
 	if (iX > 1 && iY/2 + 1 != iX)
 		REPORT_ERROR("windowFourierTransform ERROR: the Fourier transform should be of an image with equal sizes in all dimensions!");
@@ -1516,11 +1517,11 @@ void windowFourierTransform2(
 
 
 	deviceInitComplexValue<ACCCOMPLEX>(d_out, (XFLOAT)0.);
-	HANDLE_ERROR(cudaStreamSynchronize(d_out.getStream()));
+	HANDLE_ERROR(hipStreamSynchronize(d_out.getStream()));
 
 	if(oX==iX)
 	{
-		HANDLE_ERROR(cudaStreamSynchronize(d_in.getStream()));
+		HANDLE_ERROR(hipStreamSynchronize(d_in.getStream()));
 #ifdef CUDA
 		cudaCpyDeviceToDevice(&d_in(pos), ~d_out, oX*oY*oZ*Npsi, d_out.getStream() );
 #else
@@ -1543,7 +1544,7 @@ void windowFourierTransform2(
 				iX*iY*iZ,
 				WINDOW_FT_BLOCK_SIZE,
 				max_r2);
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
 #else
 		size_t grid_dim = (size_t)( ceil((float)(iX*iY*iZ) / (float) WINDOW_FT_BLOCK_SIZE));
 		CpuKernels::window_fourier_transform<true>(
@@ -1569,7 +1570,7 @@ void windowFourierTransform2(
 				oX, oY, oZ, oX * oY, //Output dimensions
 				oX*oY*oZ,
 				WINDOW_FT_BLOCK_SIZE);
-		LAUNCH_HANDLE_ERROR(cudaGetLastError());
+		LAUNCH_HANDLE_ERROR(hipGetLastError());
 #else
 		int grid_dim = (int)( ceil((float)(oX*oY*oZ) / (float) WINDOW_FT_BLOCK_SIZE));
 		CpuKernels::window_fourier_transform<false>(

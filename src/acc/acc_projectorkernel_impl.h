@@ -3,7 +3,7 @@
 
 
 #ifndef PROJECTOR_NO_TEXTURES
-#define PROJECTOR_PTR_TYPE cudaTextureObject_t
+#define PROJECTOR_PTR_TYPE hipTextureObject_t
 #else
 #define PROJECTOR_PTR_TYPE XFLOAT *
 #endif

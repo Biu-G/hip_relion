@@ -1,14 +1,14 @@
 #ifndef CUDA_PROJECTOR_CUH_
 #define CUDA_PROJECTOR_CUH_
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include "src/gpu_utils/cuda_projector.h"
 #include "src/gpu_utils/cuda_device_utils.cuh"
 
 
 
 #ifndef CUDA_NO_TEXTURES
-#define PROJECTOR_PTR_TYPE cudaTextureObject_t
+#define PROJECTOR_PTR_TYPE hipTextureObject_t
 #else
 #define PROJECTOR_PTR_TYPE XFLOAT *
 #endif

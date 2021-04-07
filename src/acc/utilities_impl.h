@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef ACC_UTILITIES_IMPL_H_
 #define ACC_UTILITIES_IMPL_H_
 
@@ -238,24 +239,24 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
 
 #ifdef CUDA
     // Set up states to seeda and run randomization on the GPU
-    // AccDataTypes::Image<curandState > RandomStates(RND_BLOCK_NUM*RND_BLOCK_SIZE,ptrFactory);
-    AccPtr<curandState> RandomStates = RandomImage.make<curandState>(RND_BLOCK_NUM*RND_BLOCK_SIZE);
+    // AccDataTypes::Image<hiprandState > RandomStates(RND_BLOCK_NUM*RND_BLOCK_SIZE,ptrFactory);
+    AccPtr<hiprandState> RandomStates = RandomImage.make<hiprandState>(RND_BLOCK_NUM*RND_BLOCK_SIZE);
     RandomStates.deviceAlloc();
 
     NoiseSpectra.cpToDevice();
     NoiseSpectra.streamSync();
-    LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
+    LAUNCH_PRIVATE_ERROR(hipGetLastError(),accMLO->errorStatus);
 
     // Initialize randomization by particle ID, like on the CPU-side
-    cuda_kernel_initRND<<<RND_BLOCK_NUM,RND_BLOCK_SIZE>>>(
+    hipLaunchKernelGGL(cuda_kernel_initRND, RND_BLOCK_NUM, RND_BLOCK_SIZE, 0, 0, 
                                      seed,
                                     ~RandomStates);
-    LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
+    LAUNCH_PRIVATE_ERROR(hipGetLastError(),accMLO->errorStatus);
 
     // Create noise image with the correct spectral profile
     if(is3D)
     {
-    	cuda_kernel_RNDnormalDitributionComplexWithPowerModulation3D<<<RND_BLOCK_NUM,RND_BLOCK_SIZE>>>(
+    	hipLaunchKernelGGL(cuda_kernel_RNDnormalDitributionComplexWithPowerModulation3D, RND_BLOCK_NUM, RND_BLOCK_SIZE, 0, 0, 
                                     ~accMLO->transformer1.fouriers,
                                     ~RandomStates,
 									accMLO->transformer1.xFSize,
@@ -264,13 +265,13 @@ void makeNoiseImage(XFLOAT sigmaFudgeFactor,
     }
     else
     {
-    	cuda_kernel_RNDnormalDitributionComplexWithPowerModulation2D<<<RND_BLOCK_NUM,RND_BLOCK_SIZE>>>(
+    	hipLaunchKernelGGL(cuda_kernel_RNDnormalDitributionComplexWithPowerModulation2D, RND_BLOCK_NUM, RND_BLOCK_SIZE, 0, 0, 
     	                                    ~accMLO->transformer1.fouriers,
     	                                    ~RandomStates,
     										accMLO->transformer1.xFSize,
     	                                    ~NoiseSpectra);
     }
-    LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
+    LAUNCH_PRIVATE_ERROR(hipGetLastError(),accMLO->errorStatus);
 
     // Transform to real-space, to get something which look like
     // the particle image without actual signal (a particle)
@@ -328,7 +329,7 @@ static void TranslateAndNormCorrect(MultidimArray<RFLOAT > &img_in,
 		CpuKernels::cpu_kernel_multi<XFLOAT>(temp(),normcorr, temp.getSize());
 #endif
 	}
-	//LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
+	//LAUNCH_PRIVATE_ERROR(hipGetLastError(),accMLO->errorStatus);
 
 	if(temp.getAccPtr()==img_out.getAccPtr())
 		CRITICAL(ERRUNSAFEOBJECTREUSE);
@@ -338,7 +339,7 @@ static void TranslateAndNormCorrect(MultidimArray<RFLOAT > &img_in,
 		CudaKernels::cuda_kernel_translate3D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.zyxdim,img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
 	else
 		CudaKernels::cuda_kernel_translate2D<XFLOAT><<<BSZ,BLOCK_SIZE,0,temp.getStream()>>>(temp(),img_out(),img_in.zyxdim,img_in.xdim,img_in.ydim,xOff,yOff);
-	//LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
+	//LAUNCH_PRIVATE_ERROR(hipGetLastError(),accMLO->errorStatus);
 #else
 	if (DATA3D)
 		CpuKernels::cpu_translate3D<XFLOAT>(temp(),img_out(),img_in.zyxdim,img_in.xdim,img_in.ydim,img_in.zdim,xOff,yOff,zOff);
@@ -371,7 +372,7 @@ void normalizeAndTransformImage(	AccPtr<XFLOAT> &img_in,
 							(XFLOAT*)~accMLO->transformer1.fouriers,
 							(XFLOAT)1/((XFLOAT)(accMLO->transformer1.reals.getSize())),
 							accMLO->transformer1.fouriers.getSize()*2);
-			//LAUNCH_PRIVATE_ERROR(cudaGetLastError(),accMLO->errorStatus);
+			//LAUNCH_PRIVATE_ERROR(hipGetLastError(),accMLO->errorStatus);
 
 			AccPtr<ACCCOMPLEX> d_Fimg = img_in.make<ACCCOMPLEX>(xSize * ySize * zSize);
 			d_Fimg.allAlloc();
@@ -487,7 +488,7 @@ static void cosineFilter(
 }
 
 void centerFFT_2D(int grid_size, int batch_size, int block_size,
-				cudaStream_t stream,
+				hipStream_t stream,
 				XFLOAT *img_in,
 				size_t image_size,
 				int xdim,
@@ -497,7 +498,7 @@ void centerFFT_2D(int grid_size, int batch_size, int block_size,
 {
 #ifdef CUDA
 	dim3 blocks(grid_size, batch_size);
-	cuda_kernel_centerFFT_2D<<<blocks,block_size,0,stream>>>(
+	hipLaunchKernelGGL(cuda_kernel_centerFFT_2D, blocks, block_size, 0, stream, 
 				img_in,
 				image_size,
 				xdim,
@@ -525,7 +526,7 @@ void centerFFT_2D(int grid_size, int batch_size, int block_size,
 {
 #ifdef CUDA
 	dim3 blocks(grid_size, batch_size);
-	cuda_kernel_centerFFT_2D<<<blocks,block_size>>>(
+	hipLaunchKernelGGL(cuda_kernel_centerFFT_2D, blocks, block_size, 0, 0, 
 				img_in,
 				image_size,
 				xdim,
@@ -544,7 +545,7 @@ void centerFFT_2D(int grid_size, int batch_size, int block_size,
 }
 
 void centerFFT_3D(int grid_size, int batch_size, int block_size,
-				cudaStream_t stream,
+				hipStream_t stream,
 				XFLOAT *img_in,
 				size_t image_size,
 				int xdim,
@@ -556,7 +557,7 @@ void centerFFT_3D(int grid_size, int batch_size, int block_size,
 {
 #ifdef CUDA
 	dim3 blocks(grid_size, batch_size);
-	cuda_kernel_centerFFT_3D<<<blocks,block_size, 0, stream>>>(
+	hipLaunchKernelGGL(cuda_kernel_centerFFT_3D, blocks, block_size, 0, stream, 
 				img_in,
 				image_size,
 				xdim,
@@ -591,12 +592,12 @@ void kernel_exponentiate_weights_fine(	XFLOAT *g_pdf_orientation,
 										unsigned long *d_job_idx,
 										unsigned long *d_job_num,
 										long int job_num,
-										cudaStream_t stream)
+										hipStream_t stream)
 {
 	long block_num = ceil((double)job_num / (double)SUMW_BLOCK_SIZE);
 
 #ifdef CUDA
-	cuda_kernel_exponentiate_weights_fine<<<block_num,SUMW_BLOCK_SIZE,0,stream>>>(
+	hipLaunchKernelGGL(cuda_kernel_exponentiate_weights_fine, block_num, SUMW_BLOCK_SIZE, 0, stream, 
 		g_pdf_orientation,
 		g_pdf_orientation_zeros,
 		g_pdf_offset,

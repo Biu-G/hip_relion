@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #undef ALTCPU
 #include <sys/time.h>
 #include <stdio.h>
@@ -7,9 +8,9 @@
 #include <vector>
 #include <iostream>
 #include "src/ml_optimiser.h"
-#include <cuda_runtime.h>
-#include <curand.h>
-#include <curand_kernel.h>
+#include <hip/hip_runtime.h>
+#include <hiprand.h>
+#include <hiprand_kernel.h>
 
 #include "src/acc/acc_ptr.h"
 #include "src/acc/acc_projector.h"
@@ -68,14 +69,14 @@ size_t MlDeviceBundle::checkFixedSizedObjects(int shares)
 {
 	int devCount;
 	size_t BoxLimit;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 		CRITICAL(ERR_GPUID);
 
-	HANDLE_ERROR(cudaSetDevice(device_id));
+	HANDLE_ERROR(hipSetDevice(device_id));
 
 	size_t free(0), total(0);
-	DEBUG_HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
+	DEBUG_HANDLE_ERROR(hipMemGetInfo( &free, &total ));
 	float margin(1.05);
 	BoxLimit = pow(free/(margin*2.5*sizeof(XFLOAT)*((float)shares)),(1/3.0)) / ((float) baseMLO->mymodel.padding_factor);
 	//size_t BytesNeeded = ((float)shares)*margin*2.5*sizeof(XFLOAT)*pow((baseMLO->mymodel.ori_size*baseMLO->mymodel.padding_factor),3);
@@ -85,14 +86,14 @@ size_t MlDeviceBundle::checkFixedSizedObjects(int shares)
 void MlDeviceBundle::setupFixedSizedObjects()
 {
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(device_id));
+		HANDLE_ERROR(hipSetDevice(device_id));
 
 	//Can we pre-generate projector plan and corresponding euler matrices for all particles
 	if (baseMLO->do_skip_align || baseMLO->do_skip_rotate || baseMLO->do_auto_refine || baseMLO->mymodel.orientational_prior_mode != NOPRIOR)
@@ -144,7 +145,7 @@ void MlDeviceBundle::setupFixedSizedObjects()
 	======================================================*/
 
 	int memAlignmentSize;
-	cudaDeviceGetAttribute ( &memAlignmentSize, cudaDevAttrTextureAlignment, device_id );
+	hipDeviceGetAttribute ( &memAlignmentSize, hipDeviceAttributeTextureAlignment, device_id );
 	allocator = new CudaCustomAllocator(0, memAlignmentSize);
 }
 
@@ -152,14 +153,14 @@ void MlDeviceBundle::setupTunableSizedObjects(size_t allocationSize)
 {
 	unsigned nr_models = baseMLO->mymodel.nr_classes;
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(device_id));
+		HANDLE_ERROR(hipSetDevice(device_id));
 
 	/*======================================================
 	                    CUSTOM ALLOCATOR
@@ -225,20 +226,20 @@ void MlDeviceBundle::setupTunableSizedObjects(size_t allocationSize)
 void MlOptimiserCuda::resetData()
 {
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(device_id));
+		HANDLE_ERROR(hipSetDevice(device_id));
 
 	unsigned nr_classes = baseMLO->mymodel.nr_classes;
 
 	classStreams.resize(nr_classes, 0);
 	for (int i = 0; i < nr_classes; i++)
-		HANDLE_ERROR(cudaStreamCreate(&classStreams[i])); //HANDLE_ERROR(cudaStreamCreateWithFlags(&classStreams[i],cudaStreamNonBlocking));
+		HANDLE_ERROR(hipStreamCreate(&classStreams[i])); //HANDLE_ERROR(hipStreamCreateWithFlags(&classStreams[i],hipStreamNonBlocking));
 
 	transformer1.clear();
 	transformer2.clear();
@@ -254,14 +255,14 @@ void MlOptimiserCuda::doThreadExpectationSomeParticles(int thread_id)
 //	CTOC(cudaMLO->timer,"interParticle");
 
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		DEBUG_HANDLE_ERROR(cudaSetDevice(device_id));
+		DEBUG_HANDLE_ERROR(hipSetDevice(device_id));
 	//std::cerr << " calling on device " << device_id << std::endl;
 	//put mweight allocation here
 	size_t first_ipart = 0, last_ipart = 0;

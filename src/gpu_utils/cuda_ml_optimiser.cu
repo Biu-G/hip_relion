@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <sys/time.h>
 #include <stdio.h>
 #include <time.h>
@@ -19,7 +20,7 @@
 #include "src/helix.h"
 #include "src/error.h"
 #include <fstream>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include "src/parallel.h"
 #include <signal.h>
 #include <map>
@@ -285,11 +286,11 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 		if (baseMLO->do_norm_correction)
 		{
 			CTIC(cudaMLO->timer,"norm_corr");
-			cuda_kernel_multi<<<STBsize,BLOCK_SIZE>>>(
+			hipLaunchKernelGGL(cuda_kernel_multi, STBsize, BLOCK_SIZE, 0, 0, 
 									~temp,
 									(XFLOAT)(baseMLO->mymodel.avg_norm_correction / normcorr),
 									img_size);
-			LAUNCH_PRIVATE_ERROR(cudaGetLastError(),cudaMLO->errorStatus);
+			LAUNCH_PRIVATE_ERROR(hipGetLastError(),cudaMLO->errorStatus);
 			temp.streamSync();
 			CTOC(cudaMLO->timer,"norm_corr");
 		}
@@ -331,7 +332,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 		my_old_offset.selfROUND();
 		CTIC(cudaMLO->timer,"kernel_translate");
 		if(cudaMLO->dataIs3D)
-			cuda_kernel_translate3D<<<STBsize,BLOCK_SIZE>>>(
+			hipLaunchKernelGGL(cuda_kernel_translate3D, STBsize, BLOCK_SIZE, 0, 0, 
 								~temp,  // translate from temp...
 								~d_img, // ... into d_img
 								img_size,
@@ -342,7 +343,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 								YY(my_old_offset),
 								ZZ(my_old_offset));
 		else
-			cuda_kernel_translate2D<<<STBsize,BLOCK_SIZE>>>(
+			hipLaunchKernelGGL(cuda_kernel_translate2D, STBsize, BLOCK_SIZE, 0, 0, 
 								~temp,  // translate from temp...
 								~d_img, // ... into d_img
 								img_size,
@@ -350,7 +351,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 								img.data.ydim,
 								XX(my_old_offset),
 								YY(my_old_offset));
-		LAUNCH_PRIVATE_ERROR(cudaGetLastError(),cudaMLO->errorStatus);
+		LAUNCH_PRIVATE_ERROR(hipGetLastError(),cudaMLO->errorStatus);
 		CTOC(cudaMLO->timer,"kernel_translate");
 
 		if (baseMLO->has_converged && baseMLO->do_use_reconstruct_images) //rec_img is NOT norm_corrected in the CPU-code, so nor do we.
@@ -360,7 +361,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 			temp.cp_to_device();
 			temp.streamSync();
 			if(cudaMLO->dataIs3D)
-				cuda_kernel_translate3D<<<STBsize,BLOCK_SIZE>>>(
+				hipLaunchKernelGGL(cuda_kernel_translate3D, STBsize, BLOCK_SIZE, 0, 0, 
 									~temp,  // translate from temp...
 									~d_img, // ... into d_img
 									img_size,
@@ -371,7 +372,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 									YY(my_old_offset),
 									ZZ(my_old_offset));
 			else
-				cuda_kernel_translate2D<<<STBsize,BLOCK_SIZE>>>(
+				hipLaunchKernelGGL(cuda_kernel_translate2D, STBsize, BLOCK_SIZE, 0, 0, 
 									~temp,  // translate from temp...
 									~d_img, // ... into d_img
 									img_size,
@@ -379,7 +380,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 									img.data.ydim,
 									XX(my_old_offset),
 									YY(my_old_offset));
-			LAUNCH_PRIVATE_ERROR(cudaGetLastError(),cudaMLO->errorStatus);
+			LAUNCH_PRIVATE_ERROR(hipGetLastError(),cudaMLO->errorStatus);
 		}
 
 		if ( (baseMLO->do_helical_refine) && (! baseMLO->ignore_helical_symmetry) )
@@ -430,7 +431,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 						(XFLOAT*)~cudaMLO->transformer1.fouriers,
 						(XFLOAT)1/((XFLOAT)(cudaMLO->transformer1.reals.getSize())),
 						cudaMLO->transformer1.fouriers.getSize()*2);
-		LAUNCH_PRIVATE_ERROR(cudaGetLastError(),cudaMLO->errorStatus);
+		LAUNCH_PRIVATE_ERROR(hipGetLastError(),cudaMLO->errorStatus);
 
 		CudaGlobalPtr<CUDACOMPLEX> d_Fimg(current_size_x * current_size_y * current_size_z, cudaMLO->devBundle->allocator);
 		d_Fimg.device_alloc();
@@ -571,7 +572,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 			XFLOAT radius_p = radius + cosine_width;
 
 //			dim3 block_dim = 1; //TODO
-//			cuda_kernel_softMaskOutsideMap<<<block_dim,SOFTMASK_BLOCK_SIZE>>>(	~d_img,
+//			hipLaunchKernelGGL(cuda_kernel_softMaskOutsideMap, block_dim, SOFTMASK_BLOCK_SIZE, 0, 0, 	~d_img,
 //																				img().nzyxdim,
 //																				img.data.xdim,
 //																				img.data.ydim,
@@ -583,7 +584,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 //																				radius,
 //																				radius_p,
 //																				cosine_width);
-//			LAUNCH_PRIVATE_ERROR(cudaGetLastError(),cudaMLO->errorStatus);
+//			LAUNCH_PRIVATE_ERROR(hipGetLastError(),cudaMLO->errorStatus);
 
 			XFLOAT sum_bg(0.);
 			dim3 block_dim = 128; //TODO: set balanced (hardware-dep?)
@@ -593,7 +594,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 			softMaskSum_bg.device_alloc();
 			softMaskSum.device_init(0.f);
 			softMaskSum_bg.device_init(0.f);
-			cuda_kernel_softMaskBackgroundValue<<<block_dim,SOFTMASK_BLOCK_SIZE>>>(	~d_img,
+			hipLaunchKernelGGL(cuda_kernel_softMaskBackgroundValue, block_dim, SOFTMASK_BLOCK_SIZE, 0, 0, 	~d_img,
 																				img().nzyxdim,
 																				img.data.xdim,
 																				img.data.ydim,
@@ -607,13 +608,13 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 																				cosine_width,
 																				~softMaskSum,
 																				~softMaskSum_bg);
-			LAUNCH_PRIVATE_ERROR(cudaGetLastError(),cudaMLO->errorStatus);
+			LAUNCH_PRIVATE_ERROR(hipGetLastError(),cudaMLO->errorStatus);
 
 			softMaskSum.streamSync();
 			sum_bg = (RFLOAT) getSumOnDevice(softMaskSum_bg) / (RFLOAT) getSumOnDevice(softMaskSum);
 			softMaskSum.streamSync();
 
-			cuda_kernel_cosineFilter<<<block_dim,SOFTMASK_BLOCK_SIZE>>>(	~d_img,
+			hipLaunchKernelGGL(cuda_kernel_cosineFilter, block_dim, SOFTMASK_BLOCK_SIZE, 0, 0, 	~d_img,
 																			img().nzyxdim,
 																			img.data.xdim,
 																			img.data.ydim,
@@ -626,11 +627,11 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 																			radius_p,
 																			cosine_width,
 																			sum_bg);
-			LAUNCH_PRIVATE_ERROR(cudaGetLastError(),cudaMLO->errorStatus);
+			LAUNCH_PRIVATE_ERROR(hipGetLastError(),cudaMLO->errorStatus);
 
 //			d_img.streamSync();
 //			d_img.cp_to_host();
-			DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+			DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 //			FOR_ALL_DIRECT_ELEMENTS_IN_MULTIDIMARRAY(img())
 //			{
@@ -668,7 +669,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 						(XFLOAT*)~cudaMLO->transformer1.fouriers,
 						(XFLOAT)1/((XFLOAT)(cudaMLO->transformer1.reals.getSize())),
 						cudaMLO->transformer1.fouriers.getSize()*2);
-		LAUNCH_PRIVATE_ERROR(cudaGetLastError(),cudaMLO->errorStatus);
+		LAUNCH_PRIVATE_ERROR(hipGetLastError(),cudaMLO->errorStatus);
 
 		CTOC(cudaMLO->timer,"transform");
 
@@ -685,7 +686,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 
 			dim3 gridSize = CEIL((float)(cudaMLO->transformer1.fouriers.getSize()) / (float)POWERCLASS_BLOCK_SIZE);
 			if(cudaMLO->dataIs3D)
-				cuda_kernel_powerClass<true><<<gridSize,POWERCLASS_BLOCK_SIZE,0,0>>>(
+				hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_powerClass<true>), gridSize, POWERCLASS_BLOCK_SIZE, 0, 0, 
 					~cudaMLO->transformer1.fouriers,
 					~spectrumAndXi2,
 					cudaMLO->transformer1.fouriers.getSize(),
@@ -696,7 +697,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 					(baseMLO->mymodel.current_size/2)+1, // note: NOT baseMLO->mymodel.ori_size/2+1
 					&spectrumAndXi2.d_ptr[spectrumAndXi2.getSize()-1]); // last element is the hihgres_Xi2
 			else
-				cuda_kernel_powerClass<false><<<gridSize,POWERCLASS_BLOCK_SIZE,0,0>>>(
+				hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_powerClass<false>), gridSize, POWERCLASS_BLOCK_SIZE, 0, 0, 
 					~cudaMLO->transformer1.fouriers,
 					~spectrumAndXi2,
 					cudaMLO->transformer1.fouriers.getSize(),
@@ -707,7 +708,7 @@ void getFourierTransformsAndCtfs(long int my_ori_particle,
 					(baseMLO->mymodel.current_size/2)+1, // note: NOT baseMLO->mymodel.ori_size/2+1
 					&spectrumAndXi2.d_ptr[spectrumAndXi2.getSize()-1]); // last element is the hihgres_Xi2
 
-			LAUNCH_PRIVATE_ERROR(cudaGetLastError(),cudaMLO->errorStatus);
+			LAUNCH_PRIVATE_ERROR(hipGetLastError(),cudaMLO->errorStatus);
 
 			spectrumAndXi2.streamSync();
 			spectrumAndXi2.cp_to_host();
@@ -1006,8 +1007,8 @@ void getAllSquaredDifferencesCoarse(
 		allWeights_pos = 0;
 
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
-			DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+			DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
 		{
@@ -1060,8 +1061,8 @@ void getAllSquaredDifferencesCoarse(
 		}
 
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
-			DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread)); // does not appear to be NEEDED FOR NON-BLOCKING CLASS STREAMS in tests, but should be to sync against classStreams
+			DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread)); // does not appear to be NEEDED FOR NON-BLOCKING CLASS STREAMS in tests, but should be to sync against classStreams
 
 		op.min_diff2[ipart] = getMinOnDevice(allWeights);
 		op.avg_diff2[ipart] = (RFLOAT) getSumOnDevice(allWeights) / (RFLOAT) allWeights_size;
@@ -1302,8 +1303,8 @@ void getAllSquaredDifferencesFine(unsigned exp_ipass,
 		FinePassWeights[ipart].trans_idx.cp_to_device();
 
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
-			DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+			DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
 		{
@@ -1360,15 +1361,15 @@ void getAllSquaredDifferencesFine(unsigned exp_ipass,
 						cudaMLO->dataIs3D
 						);
 
-//				DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+//				DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 				CTOC(cudaMLO->timer,"Diff2CALL");
 
 			} // end if class significant
 		} // end loop iclass
 
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
-			DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+			DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 		FinePassWeights[ipart].setDataSize( newDataSize );
 
@@ -1492,16 +1493,16 @@ void convertAllSquaredDifferencesToWeights(unsigned exp_ipass,
 
 			std::pair<int, XFLOAT> min_pair=getArgMinOnDevice(PassWeights[ipart].weights);
 			PassWeights[ipart].weights.cp_to_host();
-			DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+			DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 			//Set all device-located weights to zero, and only the smallest one to 1.
-			DEBUG_HANDLE_ERROR(cudaMemsetAsync(~(PassWeights[ipart].weights), 0.f, PassWeights[ipart].weights.getSize()*sizeof(XFLOAT),0));
+			DEBUG_HANDLE_ERROR(hipMemsetAsync(~(PassWeights[ipart].weights), 0.f, PassWeights[ipart].weights.getSize()*sizeof(XFLOAT),0));
 
 			XFLOAT unity=1;
-			DEBUG_HANDLE_ERROR(cudaMemcpyAsync( &(PassWeights[ipart].weights(min_pair.first) ), &unity, sizeof(XFLOAT), cudaMemcpyHostToDevice, 0));
+			DEBUG_HANDLE_ERROR(hipMemcpyAsync( &(PassWeights[ipart].weights(min_pair.first) ), &unity, sizeof(XFLOAT), hipMemcpyHostToDevice, 0));
 
 			PassWeights[ipart].weights.cp_to_host();
-			DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+			DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 			my_significant_weight = 0.999;
 			DIRECT_A2D_ELEM(baseMLO->exp_metadata, op.metadata_offset + ipart, METADATA_NR_SIGN) = (RFLOAT) 1.;
@@ -1633,8 +1634,7 @@ void convertAllSquaredDifferencesToWeights(unsigned exp_ipass,
 				{
 					weights.device_alloc();
 					block_num = ceilf((float)Mweight.getSize()/(float)BLOCK_SIZE);
-					cuda_kernel_cast<XFLOAT,weights_t><<<block_num,BLOCK_SIZE,0>>>
-							(~Mweight,~weights,Mweight.getSize());
+					hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_cast<XFLOAT,weights_t>), block_num, BLOCK_SIZE, 0, 0, ~Mweight,~weights,Mweight.getSize());
 				}
 
 				CudaGlobalPtr<weights_t>  ipartMweight(
@@ -1647,8 +1647,7 @@ void convertAllSquaredDifferencesToWeights(unsigned exp_ipass,
 
 				if (failsafeMode) //Prevent zero prior products in fail-safe mode
 				{
-					cuda_kernel_exponentiate_weights_coarse<true,weights_t>
-					<<<block_dim,SUMW_BLOCK_SIZE,0>>>(
+					hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_exponentiate_weights_coarse<true,weights_t>), block_dim, SUMW_BLOCK_SIZE, 0, 0, 
 							~pdf_orientation,
 							~pdf_offset,
 							~ipartMweight,
@@ -1659,8 +1658,7 @@ void convertAllSquaredDifferencesToWeights(unsigned exp_ipass,
 				}
 				else
 				{
-					cuda_kernel_exponentiate_weights_coarse<false,weights_t>
-					<<<block_dim,SUMW_BLOCK_SIZE,0>>>(
+					hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda_kernel_exponentiate_weights_coarse<false,weights_t>), block_dim, SUMW_BLOCK_SIZE, 0, 0, 
 							~pdf_orientation,
 							~pdf_offset,
 							~ipartMweight,
@@ -1671,7 +1669,7 @@ void convertAllSquaredDifferencesToWeights(unsigned exp_ipass,
 				}
 
 				CTIC(cudaMLO->timer,"sort");
-				DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+				DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 				long ipart_length = (sp.iclass_max-sp.iclass_min+1) * sp.nr_dir * sp.nr_psi * sp.nr_trans;
 
@@ -1739,7 +1737,7 @@ void convertAllSquaredDifferencesToWeights(unsigned exp_ipass,
 								cumulative_sum.getSize()-1,
 								~idx);
 						idx.cp_to_host();
-						DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cumulative_sum.getStream()));
+						DEBUG_HANDLE_ERROR(hipStreamSynchronize(cumulative_sum.getStream()));
 
 						thresholdIdx = idx[0];
 					}
@@ -1795,10 +1793,10 @@ void convertAllSquaredDifferencesToWeights(unsigned exp_ipass,
 					CUSTOM_ALLOCATOR_REGION_NAME("CASDTW_SIG");
 					Mcoarse_significant.device_alloc();
 
-					DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+					DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 					arrayOverThreshold<weights_t>(unsorted_ipart, Mcoarse_significant, significant_weight);
 					Mcoarse_significant.cp_to_host();
-					DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+					DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 				}
 				else if (ipart_length == 1)
 				{
@@ -1811,8 +1809,8 @@ void convertAllSquaredDifferencesToWeights(unsigned exp_ipass,
 			{
 
 				for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
-					DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
-				DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+					DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
+				DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 				for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++) // TODO could use classStreams
 				{
@@ -1827,7 +1825,7 @@ void convertAllSquaredDifferencesToWeights(unsigned exp_ipass,
 						block_num = ceil((float)FPCMasks[ipart][exp_iclass].jobNum / (float)SUMW_BLOCK_SIZE); //thisClassPassWeights.rot_idx.getSize() / SUM_BLOCK_SIZE;
 						dim3 block_dim(block_num);
 
-						cuda_kernel_exponentiate_weights_fine<<<block_dim,SUMW_BLOCK_SIZE,0,cudaMLO->classStreams[exp_iclass]>>>(
+						hipLaunchKernelGGL(cuda_kernel_exponentiate_weights_fine, block_dim, SUMW_BLOCK_SIZE, 0, cudaMLO->classStreams[exp_iclass], 
 								~pdf_orientation_class,
 								~pdf_offset_class,
 								~thisClassPassWeights.weights,
@@ -1839,20 +1837,20 @@ void convertAllSquaredDifferencesToWeights(unsigned exp_ipass,
 								~FPCMasks[ipart][exp_iclass].jobOrigin,
 								~FPCMasks[ipart][exp_iclass].jobExtent,
 								FPCMasks[ipart][exp_iclass].jobNum);
-								LAUNCH_PRIVATE_ERROR(cudaGetLastError(),cudaMLO->errorStatus);
+								LAUNCH_PRIVATE_ERROR(hipGetLastError(),cudaMLO->errorStatus);
 					}
 
 				}
 
 				for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
-					DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
-				DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+					DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
+				DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 				PassWeights[ipart].weights.cp_to_host(); // note that the host-pointer is shared: we're copying to Mweight.
 
 
 				CTIC(cudaMLO->timer,"sort");
-				DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+				DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 				size_t weightSize = PassWeights[ipart].weights.getSize();
 
 				CudaGlobalPtr<XFLOAT> sorted(weightSize, cudaMLO->devBundle->allocator);
@@ -2122,7 +2120,7 @@ void storeWeightedSums(OptimisationParamters &op, SamplingParameters &sp,
 		oo_otrans_z.put_on_device();
 
 		myp_oo_otrans_x2y2z2.cp_to_device();
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 		CudaGlobalPtr<XFLOAT>                      p_weights(sumBlockNum, cudaMLO->devBundle->allocator);
 		CudaGlobalPtr<XFLOAT> p_thr_wsum_prior_offsetx_class(sumBlockNum, cudaMLO->devBundle->allocator);
@@ -2180,7 +2178,7 @@ void storeWeightedSums(OptimisationParamters &op, SamplingParameters &sp,
 						~FPCMasks[ipart][exp_iclass].jobOrigin,
 						~FPCMasks[ipart][exp_iclass].jobExtent,
 						cudaMLO->dataIs3D);
-			LAUNCH_PRIVATE_ERROR(cudaGetLastError(),cudaMLO->errorStatus);
+			LAUNCH_PRIVATE_ERROR(hipGetLastError(),cudaMLO->errorStatus);
 
 			partial_pos+=block_num;
 		}
@@ -2193,7 +2191,7 @@ void storeWeightedSums(OptimisationParamters &op, SamplingParameters &sp,
 		if (cudaMLO->dataIs3D)
 			p_thr_wsum_prior_offsetz_class.cp_to_host();
 
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 		int iorient = 0;
 		partial_pos=0;
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
@@ -2506,8 +2504,8 @@ void storeWeightedSums(OptimisationParamters &op, SamplingParameters &sp,
 		int classPos = 0;
 
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
-			DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+			DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
 		{
@@ -2570,8 +2568,8 @@ void storeWeightedSums(OptimisationParamters &op, SamplingParameters &sp,
 
 		// These syncs are necessary (for multiple ranks on the same GPU), and (assumed) low-cost.
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
-			DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+			DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 		classPos = 0;
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
@@ -2668,13 +2666,13 @@ void storeWeightedSums(OptimisationParamters &op, SamplingParameters &sp,
 		// NOTE: We've never seen that this sync is necessary, but it is needed in principle, and
 		// its absence in other parts of the code has caused issues. It is also very low-cost.
 		for (int exp_iclass = sp.iclass_min; exp_iclass <= sp.iclass_max; exp_iclass++)
-			DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+			DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaMLO->classStreams[exp_iclass]));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 		wdiff2s_AA.cp_to_host();
 		wdiff2s_XA.cp_to_host();
 		wdiff2s_sum.cp_to_host();
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(cudaStreamPerThread));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(cudaStreamPerThread));
 
 		AAXA_pos=0;
 
@@ -2837,14 +2835,14 @@ size_t MlDeviceBundle::checkFixedSizedObjects(int shares)
 {
 	int devCount;
 	size_t BoxLimit;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 		CRITICAL(ERR_GPUID);
 
-	HANDLE_ERROR(cudaSetDevice(device_id));
+	HANDLE_ERROR(hipSetDevice(device_id));
 
 	size_t free(0), total(0);
-	DEBUG_HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
+	DEBUG_HANDLE_ERROR(hipMemGetInfo( &free, &total ));
 	float margin(1.05);
 	BoxLimit = pow(free/(margin*2.5*sizeof(XFLOAT)*((float)shares)),(1/3.0)) / (2.0);
 	size_t BytesNeeded = ((float)shares)*margin*2.5*sizeof(XFLOAT)*pow((baseMLO->mymodel.ori_size*2),3);
@@ -2856,14 +2854,14 @@ void MlDeviceBundle::setupFixedSizedObjects()
 	unsigned nr_classes = baseMLO->mymodel.nr_classes;
 
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(device_id));
+		HANDLE_ERROR(hipSetDevice(device_id));
 
 	//Can we pre-generate projector plan and corresponding euler matrices for all particles
 	if (baseMLO->do_skip_align || baseMLO->do_skip_rotate || baseMLO->do_auto_refine || baseMLO->mymodel.orientational_prior_mode != NOPRIOR)
@@ -2911,7 +2909,7 @@ void MlDeviceBundle::setupFixedSizedObjects()
 	======================================================*/
 
 	int memAlignmentSize;
-	cudaDeviceGetAttribute ( &memAlignmentSize, cudaDevAttrTextureAlignment, device_id );
+	hipDeviceGetAttribute ( &memAlignmentSize, hipDeviceAttributeTextureAlignment, device_id );
 	allocator = new CudaCustomAllocator(0, memAlignmentSize);
 }
 
@@ -2919,14 +2917,14 @@ void MlDeviceBundle::setupTunableSizedObjects(size_t allocationSize)
 {
 	unsigned nr_classes = baseMLO->mymodel.nr_classes;
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(device_id));
+		HANDLE_ERROR(hipSetDevice(device_id));
 
 	/*======================================================
 	                    CUSTOM ALLOCATOR
@@ -2992,20 +2990,20 @@ void MlDeviceBundle::setupTunableSizedObjects(size_t allocationSize)
 void MlOptimiserCuda::resetData()
 {
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		HANDLE_ERROR(cudaSetDevice(device_id));
+		HANDLE_ERROR(hipSetDevice(device_id));
 
 	unsigned nr_classes = baseMLO->mymodel.nr_classes;
 
 	classStreams.resize(nr_classes, 0);
 	for (int i = 0; i < nr_classes; i++)
-		HANDLE_ERROR(cudaStreamCreate(&classStreams[i])); //HANDLE_ERROR(cudaStreamCreateWithFlags(&classStreams[i],cudaStreamNonBlocking));
+		HANDLE_ERROR(hipStreamCreate(&classStreams[i])); //HANDLE_ERROR(hipStreamCreateWithFlags(&classStreams[i],hipStreamNonBlocking));
 
 	transformer1.clear();
 	transformer2.clear();
@@ -3023,14 +3021,14 @@ void MlOptimiserCuda::doThreadExpectationSomeParticles(int thread_id)
 //	CTOC(cudaMLO->timer,"interParticle");
 
 	int devCount;
-	HANDLE_ERROR(cudaGetDeviceCount(&devCount));
+	HANDLE_ERROR(hipGetDeviceCount(&devCount));
 	if(device_id >= devCount)
 	{
 		//std::cerr << " using device_id=" << device_id << " (device no. " << device_id+1 << ") which is higher than the available number of devices=" << devCount << std::endl;
 		CRITICAL(ERR_GPUID);
 	}
 	else
-		DEBUG_HANDLE_ERROR(cudaSetDevice(device_id));
+		DEBUG_HANDLE_ERROR(hipSetDevice(device_id));
 	//std::cerr << " calling on device " << device_id << std::endl;
 	//put mweight allocation here
 	size_t first_ipart = 0, last_ipart = 0;

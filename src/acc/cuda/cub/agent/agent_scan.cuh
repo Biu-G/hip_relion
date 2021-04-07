@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::AgentScan implements a stateful abstraction of CUDA thread blocks for participating in device-wide prefix scan .
+ * hipcub::AgentScan implements a stateful abstraction of CUDA thread blocks for participating in device-wide prefix scan .
  */
 
 #pragma once
@@ -93,7 +93,7 @@ template <
     typename InputIteratorT,        ///< Random-access input iterator type
     typename OutputIteratorT,       ///< Random-access output iterator type
     typename ScanOpT,               ///< Scan functor type
-    typename InitValueT,            ///< The init_value element for ScanOpT type (cub::NullType for inclusive scan)
+    typename InitValueT,            ///< The init_value element for ScanOpT type (hipcub::NullType for inclusive scan)
     typename OffsetT>               ///< Signed integer type for global offsets
 struct AgentScan
 {

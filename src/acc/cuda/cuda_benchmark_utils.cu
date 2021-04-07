@@ -59,10 +59,10 @@ void relion_timer::cuda_gpu_tic(std::string id)
 {
 	if (cuda_benchmark_find_id(id, cuda_gpu_benchmark_identifiers) == -1)
 	{
-		cudaEvent_t start, stop;
-		cudaEventCreate(&start);
-		cudaEventCreate(&stop);
-		cudaEventRecord(start, 0);
+		hipEvent_t start, stop;
+		hipEventCreate(&start);
+		hipEventCreate(&stop);
+		hipEventRecord(start, 0);
 		cuda_gpu_benchmark_identifiers.push_back(id);
 		cuda_gpu_benchmark_start_times.push_back(start);
 		cuda_gpu_benchmark_stop_times.push_back(stop);
@@ -86,8 +86,8 @@ void relion_timer::cuda_gpu_toc(std::string id)
 	}
 	else
 	{
-		cudaEventRecord(cuda_gpu_benchmark_stop_times[idx], 0);
-		cudaEventSynchronize(cuda_gpu_benchmark_stop_times[idx]);
+		hipEventRecord(cuda_gpu_benchmark_stop_times[idx], 0);
+		hipEventSynchronize(cuda_gpu_benchmark_stop_times[idx]);
 	}
 }
 
@@ -103,10 +103,10 @@ void relion_timer::cuda_gpu_printtictoc()
 		float time;
 		for (int idx = 0; idx < cuda_gpu_benchmark_identifiers.size(); idx ++)
 		{
-			cudaEventElapsedTime(&time, cuda_gpu_benchmark_start_times[idx],
+			hipEventElapsedTime(&time, cuda_gpu_benchmark_start_times[idx],
 					cuda_gpu_benchmark_stop_times[idx]);
-			cudaEventDestroy(cuda_gpu_benchmark_start_times[idx]);
-			cudaEventDestroy(cuda_gpu_benchmark_stop_times[idx]);
+			hipEventDestroy(cuda_gpu_benchmark_start_times[idx]);
+			hipEventDestroy(cuda_gpu_benchmark_stop_times[idx]);
 			fprintf(cuda_gpu_benchmark_fPtr,"%.2f ms \t %s\n",
 					time, cuda_gpu_benchmark_identifiers[idx].c_str());
 		}

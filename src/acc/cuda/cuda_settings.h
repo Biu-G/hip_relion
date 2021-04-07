@@ -14,7 +14,7 @@
 #include "src/error.h"
 
 
-#include <curand.h>
+#include <hiprand.h>
 
 // Required compute capability
 #define CUDA_CC_MAJOR 3
@@ -53,13 +53,13 @@
                        HANDLE_ERROR(status); \
                    }
 
-static void HandleError( cudaError_t err, const char *file, int line )
+static void HandleError( hipError_t err, const char *file, int line )
 {
 
-    if (err != cudaSuccess)
+    if (err != hipSuccess)
     {
     	fprintf(stderr, "ERROR: %s in %s at line %d (error-code %d)\n",
-						cudaGetErrorString( err ), file, line, err );
+						hipGetErrorString( err ), file, line, err );
 		fflush(stdout);
 #ifdef DEBUG_CUDA
 		raise(SIGSEGV);
@@ -70,13 +70,13 @@ static void HandleError( cudaError_t err, const char *file, int line )
 }
 
 #ifdef LAUNCH_CHECK
-static void LaunchHandleError( cudaError_t err, const char *file, int line )
+static void LaunchHandleError( hipError_t err, const char *file, int line )
 {
 
-    if (err != cudaSuccess)
+    if (err != hipSuccess)
     {
         printf( "KERNEL_ERROR: %s in %s at line %d (error-code %d)\n",
-                        cudaGetErrorString( err ), file, line, err );
+                        hipGetErrorString( err ), file, line, err );
         fflush(stdout);
         CRITICAL(ERRGPUKERN);
     }

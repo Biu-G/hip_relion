@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef CUDA_HELPER_KERNELS_CUH_
 #define CUDA_HELPER_KERNELS_CUH_
 
-#include <cuda_runtime.h>
-#include <curand.h>
-#include <curand_kernel.h>
+#include <hip/hip_runtime.h>
+#include <hiprand.h>
+#include <hiprand_kernel.h>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -95,7 +96,7 @@ __global__ void cuda_kernel_collect2jobs(	XFLOAT *g_oo_otrans_x,          // otr
 	//threadid
 	int tid = threadIdx.x;
 
-	extern __shared__ XFLOAT buffer[];
+	HIP_DYNAMIC_SHARED( XFLOAT, buffer)
 
 	XFLOAT * s_o_weights 					= &buffer[                0];
 	XFLOAT * s_thr_wsum_sigma2_offset       = &buffer[  SUMW_BLOCK_SIZE];
@@ -181,15 +182,15 @@ __global__ void cuda_kernel_exponentiate_weights_fine(
 		long int job_num);
 
 __global__ void cuda_kernel_initRND(unsigned long seed,
-                                    curandState *States);
+                                    hiprandState *States);
 
 __global__ void cuda_kernel_RNDnormalDitributionComplexWithPowerModulation2D( ACCCOMPLEX *Image,
-                                                                            curandState *States,
+                                                                            hiprandState *States,
                                                                             long int xdim,
                                                                             XFLOAT * spectra);
 
 __global__ void cuda_kernel_RNDnormalDitributionComplexWithPowerModulation3D( ACCCOMPLEX *Image,
-                                                                            curandState *States,
+                                                                            hiprandState *States,
                                                                             long int xdim,
                                                                             long int ydim,
                                                                             XFLOAT * spectra);

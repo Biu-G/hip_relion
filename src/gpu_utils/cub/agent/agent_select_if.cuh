@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::AgentSelectIf implements a stateful abstraction of CUDA thread blocks for participating in device-wide select.
+ * hipcub::AgentSelectIf implements a stateful abstraction of CUDA thread blocks for participating in device-wide select.
  */
 
 #pragma once
@@ -185,7 +185,7 @@ struct AgentSelectIf
     // Callback type for obtaining tile prefix during block scan
     typedef TilePrefixCallbackOp<
             OffsetT,
-            cub::Sum,
+            hipcub::Sum,
             ScanTileStateT>
         TilePrefixCallbackOpT;
 
@@ -607,7 +607,7 @@ struct AgentSelectIf
         CTA_SYNC();
 
         // Exclusive scan of values and selection_flags
-        TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.prefix, cub::Sum(), tile_idx);
+        TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.prefix, hipcub::Sum(), tile_idx);
         BlockScanT(temp_storage.scan).ExclusiveSum(selection_flags, selection_indices, prefix_op);
 
         OffsetT num_tile_selections     = prefix_op.GetBlockAggregate();

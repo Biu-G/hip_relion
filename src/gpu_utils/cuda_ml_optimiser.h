@@ -9,7 +9,7 @@
 #include "src/gpu_utils/cuda_fft.h"
 #include "src/gpu_utils/cuda_benchmark_utils.h"
 #include <stack>
-//#include <cufft.h>
+//#include <hipfft.h>
 
 #ifdef CUDA_DOUBLE_PRECISION
 #define XFLOAT double
@@ -22,9 +22,9 @@
 //#else
 //#define HANDLE_CUFFT_ERROR( err ) (err) //Do nothing
 //#endif
-//static void CufftHandleError( cufftResult err, const char *file, int line )
+//static void CufftHandleError( hipfftResult err, const char *file, int line )
 //{
-//    if (err != CUFFT_SUCCESS)
+//    if (err != HIPFFT_SUCCESS)
 //    {
 //        fprintf(stderr, "Cufft error in file '%s' in line %i : %s.\n",
 //                __FILE__, __LINE__, "error" );
@@ -447,7 +447,7 @@ public:
 
 	void syncAllBackprojects()
 	{
-		DEBUG_HANDLE_ERROR(cudaDeviceSynchronize());
+		DEBUG_HANDLE_ERROR(hipDeviceSynchronize());
 	}
 
 
@@ -458,8 +458,8 @@ public:
 		coarseProjectionPlans.clear();
 		//Delete this lastly
 		delete allocator;
-		HANDLE_ERROR(cudaSetDevice(device_id));
-		HANDLE_ERROR(cudaDeviceReset());
+		HANDLE_ERROR(hipSetDevice(device_id));
+		HANDLE_ERROR(hipDeviceReset());
 	}
 
 };
@@ -471,8 +471,8 @@ public:
 	FourierTransformer transformer;
 
    //Class streams ( for concurrent scheduling of class-specific kernels)
-	std::vector< cudaStream_t > classStreams;
-	cudaError_t errorStatus;
+	std::vector< hipStream_t > classStreams;
+	hipError_t errorStatus;
 
 	CudaFFT transformer1;
 	CudaFFT transformer2;
@@ -503,7 +503,7 @@ public:
 #ifdef TIMING_FILES
 			timer(timing_fnm),
 #endif
-			errorStatus((cudaError_t)0),
+			errorStatus((hipError_t)0),
 			failsafe_attempts(0)
 	{};
 
@@ -515,7 +515,7 @@ public:
 	{
 		for (int i = 0; i < classStreams.size(); i++)
 			if (classStreams[i] != NULL)
-				HANDLE_ERROR(cudaStreamDestroy(classStreams[i]));
+				HANDLE_ERROR(hipStreamDestroy(classStreams[i]));
 	}
 
 };

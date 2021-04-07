@@ -3,7 +3,7 @@
 
 #ifdef CUDA
 #include "src/gpu_utils/cuda_settings.h"
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #endif
 
 #include <signal.h>
@@ -58,23 +58,23 @@
                        HANDLE_ERROR(status); \
                    }
 
-static void HandleError( cudaError_t err, const char *file, int line )
+static void HandleError( hipError_t err, const char *file, int line )
 {
 
-    if (err != cudaSuccess)
+    if (err != hipSuccess)
     {
     	fprintf(stderr, "ERROR: %s in %s at line %d (error-code %d)\n",
-						cudaGetErrorString( err ), file, line, err );
+						hipGetErrorString( err ), file, line, err );
 		fflush(stdout);
 		raise(SIGSEGV);
     }
 
 //#ifdef DEBUG_CUDA
-//      cudaError_t peek = cudaPeekAtLastError();
-//    if (peek != cudaSuccess)
+//      hipError_t peek = hipPeekAtLastError();
+//    if (peek != hipSuccess)
 //    {
 //        printf( "DEBUG_ERROR: %s in %s at line %d (error-code %d)\n",
-//                      cudaGetErrorString( peek ), file, line, err );
+//                      hipGetErrorString( peek ), file, line, err );
 //        fflush(stdout);
 //              raise(SIGSEGV);
 //    }
@@ -83,13 +83,13 @@ static void HandleError( cudaError_t err, const char *file, int line )
 }
 
 #ifdef LAUNCH_CHECK
-static void LaunchHandleError( cudaError_t err, const char *file, int line )
+static void LaunchHandleError( hipError_t err, const char *file, int line )
 {
 
-    if (err != cudaSuccess)
+    if (err != hipSuccess)
     {
         printf( "KERNEL_ERROR: %s in %s at line %d (error-code %d)\n",
-                        cudaGetErrorString( err ), file, line, err );
+                        hipGetErrorString( err ), file, line, err );
         fflush(stdout);
               CRITICAL(ERRGPUKERN);
     }
@@ -103,7 +103,7 @@ static void cudaPrintMemInfo()
 {
 	size_t free;
 	size_t total;
-	DEBUG_HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
+	DEBUG_HANDLE_ERROR(hipMemGetInfo( &free, &total ));
 	float free_hr(free/(1024.*1024.));
 	float total_hr(total/(1024.*1024.));
     printf( "free %.2fMiB, total %.2fMiB, used %.2fMiB\n",
@@ -114,49 +114,49 @@ template< typename T>
 static inline
 void cudaCpyHostToDevice( T *h_ptr, T *d_ptr, size_t size)
 {
-	DEBUG_HANDLE_ERROR(cudaMemcpy( d_ptr, h_ptr, size * sizeof(T), cudaMemcpyHostToDevice));
+	DEBUG_HANDLE_ERROR(hipMemcpy( d_ptr, h_ptr, size * sizeof(T), hipMemcpyHostToDevice));
 };
 
 template< typename T>
 static inline
-void cudaCpyHostToDevice( T *h_ptr, T *d_ptr, size_t size, cudaStream_t &stream)
+void cudaCpyHostToDevice( T *h_ptr, T *d_ptr, size_t size, hipStream_t &stream)
 {
-	DEBUG_HANDLE_ERROR(cudaMemcpyAsync( d_ptr, h_ptr, size * sizeof(T), cudaMemcpyHostToDevice, stream));
+	DEBUG_HANDLE_ERROR(hipMemcpyAsync( d_ptr, h_ptr, size * sizeof(T), hipMemcpyHostToDevice, stream));
 };
 
 template< typename T>
 static inline
 void cudaCpyDeviceToHost( T *d_ptr, T *h_ptr, size_t size)
 {
-	DEBUG_HANDLE_ERROR(cudaMemcpy( h_ptr, d_ptr, size * sizeof(T), cudaMemcpyDeviceToHost));
+	DEBUG_HANDLE_ERROR(hipMemcpy( h_ptr, d_ptr, size * sizeof(T), hipMemcpyDeviceToHost));
 };
 
 template< typename T>
 static inline
-void cudaCpyDeviceToHost( T *d_ptr, T *h_ptr, size_t size, cudaStream_t &stream)
+void cudaCpyDeviceToHost( T *d_ptr, T *h_ptr, size_t size, hipStream_t &stream)
 {
-	DEBUG_HANDLE_ERROR(cudaMemcpyAsync( h_ptr, d_ptr, size * sizeof(T), cudaMemcpyDeviceToHost, stream));
+	DEBUG_HANDLE_ERROR(hipMemcpyAsync( h_ptr, d_ptr, size * sizeof(T), hipMemcpyDeviceToHost, stream));
 };
 
 template< typename T>
 static inline
-void cudaCpyDeviceToDevice( T *src, T *des, size_t size, cudaStream_t &stream)
+void cudaCpyDeviceToDevice( T *src, T *des, size_t size, hipStream_t &stream)
 {
-	DEBUG_HANDLE_ERROR(cudaMemcpyAsync( des, src, size * sizeof(T), cudaMemcpyDeviceToDevice, stream));
+	DEBUG_HANDLE_ERROR(hipMemcpyAsync( des, src, size * sizeof(T), hipMemcpyDeviceToDevice, stream));
 };
 
 template< typename T>
 static inline
 void cudaMemInit( T *ptr, T value, size_t size)
 {
-	DEBUG_HANDLE_ERROR(cudaMemset( ptr, value, size * sizeof(T)));
+	DEBUG_HANDLE_ERROR(hipMemset( ptr, value, size * sizeof(T)));
 };
 
 template< typename T>
 static inline
-void cudaMemInit( T *ptr, T value, size_t size, cudaStream_t &stream)
+void cudaMemInit( T *ptr, T value, size_t size, hipStream_t &stream)
 {
-	DEBUG_HANDLE_ERROR(cudaMemsetAsync( ptr, value, size * sizeof(T), stream));
+	DEBUG_HANDLE_ERROR(hipMemsetAsync( ptr, value, size * sizeof(T), stream));
 };
 
 
@@ -184,7 +184,7 @@ public:
 		BYTE *ptr;
 		size_t size;
 		bool free;
-		cudaEvent_t readyEvent; //Event record used for auto free
+		hipEvent_t readyEvent; //Event record used for auto free
 		bool freeWhenReady;
 
 
@@ -210,7 +210,7 @@ public:
 			ptr = NULL;
 
 			if (readyEvent != 0)
-				DEBUG_HANDLE_ERROR(cudaEventDestroy(readyEvent));
+				DEBUG_HANDLE_ERROR(hipEventDestroy(readyEvent));
 		}
 
 	public:
@@ -224,14 +224,14 @@ public:
 		bool isFree() { return free; }
 
 		inline
-		cudaEvent_t getReadyEvent() { return readyEvent; }
+		hipEvent_t getReadyEvent() { return readyEvent; }
 
 		inline
-		void markReadyEvent(cudaStream_t stream = 0)
+		void markReadyEvent(hipStream_t stream = 0)
 		{
 			//TODO add a debug warning if event already set
-			DEBUG_HANDLE_ERROR(cudaEventCreate(&readyEvent));
-			DEBUG_HANDLE_ERROR(cudaEventRecord(readyEvent, stream));
+			DEBUG_HANDLE_ERROR(hipEventCreate(&readyEvent));
+			DEBUG_HANDLE_ERROR(hipEventRecord(readyEvent, stream));
 		}
 
 		inline
@@ -272,7 +272,7 @@ private:
 		{
 			if (! a->free && a->freeWhenReady && a->readyEvent != 0)
 			{
-				DEBUG_HANDLE_ERROR(cudaEventSynchronize(a->readyEvent));
+				DEBUG_HANDLE_ERROR(hipEventSynchronize(a->readyEvent));
 				somethingReady = true;
 			}
 
@@ -297,15 +297,15 @@ private:
 
 			if (! curr->free && curr->freeWhenReady && curr->readyEvent != 0)
 			{
-				cudaError_t e = cudaEventQuery(curr->readyEvent);
+				hipError_t e = hipEventQuery(curr->readyEvent);
 
-				if (e == cudaSuccess)
+				if (e == hipSuccess)
 				{
 					_free(curr);
 					next = first; //List modified, restart
 					somethingFreed = true;
 				}
-				else if (e != cudaErrorNotReady)
+				else if (e != hipErrorNotReady)
 				{
 					_printState();
 					HandleError( e, __FILE__, __LINE__ );
@@ -335,7 +335,7 @@ private:
 		else
 		{
 			size_t free, total;
-			DEBUG_HANDLE_ERROR(cudaMemGetInfo( &free, &total ));
+			DEBUG_HANDLE_ERROR(hipMemGetInfo( &free, &total ));
 			return free;
 		}
 	}
@@ -426,9 +426,9 @@ private:
 #ifdef CUSTOM_ALLOCATOR_MEMGUARD
 		size_t guardCount = a->size - (a->guardPtr - a->ptr);
 		BYTE *guards = new BYTE[guardCount];
-		cudaStream_t stream = 0;
+		hipStream_t stream = 0;
 		cudaCpyDeviceToHost<BYTE>( a->guardPtr, guards, guardCount, stream);
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(stream));
 		for (int i = 0; i < guardCount; i ++)
 			if (guards[i] != GUARD_VALUE)
 			{
@@ -548,7 +548,7 @@ private:
 		}
 		else
 		{
-			DEBUG_HANDLE_ERROR(cudaFree( a->ptr ));
+			DEBUG_HANDLE_ERROR(hipFree( a->ptr ));
 			a->ptr = NULL;
 
 			if ( a->prev != NULL)
@@ -573,7 +573,7 @@ private:
 
 		if (totalSize > 0)
 		{
-			HANDLE_ERROR(cudaMalloc( (void**) &(first->ptr), totalSize));
+			HANDLE_ERROR(hipMalloc( (void**) &(first->ptr), totalSize));
 			cache = true;
 		}
 		else
@@ -583,7 +583,7 @@ private:
 	void _clear()
 	{
 		if (first->ptr != NULL)
-			DEBUG_HANDLE_ERROR(cudaFree( first->ptr ));
+			DEBUG_HANDLE_ERROR(hipFree( first->ptr ));
 
 		first->ptr = NULL;
 
@@ -721,7 +721,7 @@ public:
 			newAlloc = new Alloc();
 			newAlloc->size = size;
 			newAlloc->free = false;
-			DEBUG_HANDLE_ERROR(cudaMalloc( (void**) &(newAlloc->ptr), size));
+			DEBUG_HANDLE_ERROR(hipMalloc( (void**) &(newAlloc->ptr), size));
 
 			//Just add to start by replacing first
 			newAlloc->next = first;
@@ -732,9 +732,9 @@ public:
 #ifdef CUSTOM_ALLOCATOR_MEMGUARD
 		newAlloc->backtraceSize = backtrace(newAlloc->backtrace, 20);
 		newAlloc->guardPtr = newAlloc->ptr + requestedSize;
-		cudaStream_t stream = 0;
+		hipStream_t stream = 0;
 		cudaMemInit<BYTE>( newAlloc->guardPtr, GUARD_VALUE, size - requestedSize, stream); //TODO switch to specialized stream
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(stream));
 #endif
 
 		return newAlloc;
@@ -812,7 +812,7 @@ class CudaGlobalPtr
 {
 	CudaCustomAllocator *allocator;
 	CudaCustomAllocator::Alloc *alloc;
-	cudaStream_t stream;
+	hipStream_t stream;
 public:
 	size_t size; //Size used when copying data from and to device
 	T *h_ptr, *d_ptr; //Host and device pointers
@@ -829,7 +829,7 @@ public:
 	{};
 
 	inline
-	CudaGlobalPtr(cudaStream_t stream, CudaCustomAllocator *allocator):
+	CudaGlobalPtr(hipStream_t stream, CudaCustomAllocator *allocator):
 		size(0), h_ptr(0), d_ptr(0), h_do_free(false),
 		d_do_free(false), allocator(allocator), alloc(0), stream(stream)
 	{};
@@ -841,7 +841,7 @@ public:
 	{};
 
 	inline
-	CudaGlobalPtr(size_t size, cudaStream_t stream, CudaCustomAllocator *allocator):
+	CudaGlobalPtr(size_t size, hipStream_t stream, CudaCustomAllocator *allocator):
 		size(size), h_ptr(new T[size]), d_ptr(0), h_do_free(true),
 		d_do_free(false), allocator(allocator), alloc(0), stream(stream)
 	{};
@@ -853,7 +853,7 @@ public:
 	{};
 
 	inline
-	CudaGlobalPtr(T * h_start, size_t size, cudaStream_t stream, CudaCustomAllocator *allocator):
+	CudaGlobalPtr(T * h_start, size_t size, hipStream_t stream, CudaCustomAllocator *allocator):
 		size(size), h_ptr(h_start), d_ptr(0), h_do_free(false),
 		d_do_free(false), allocator(allocator), alloc(0), stream(cudaStreamPerThread)
 	{};
@@ -865,7 +865,7 @@ public:
 	{};
 
 	inline
-	CudaGlobalPtr(T * h_start, T * d_start, size_t size, cudaStream_t stream, CudaCustomAllocator *allocator):
+	CudaGlobalPtr(T * h_start, T * d_start, size_t size, hipStream_t stream, CudaCustomAllocator *allocator):
 		size(size), h_ptr(h_start), d_ptr(d_start), h_do_free(false),
 		d_do_free(false), allocator(allocator), alloc(0), stream(stream)
 	{};
@@ -881,7 +881,7 @@ public:
 	{};
 
 	inline
-	CudaGlobalPtr(cudaStream_t stream):
+	CudaGlobalPtr(hipStream_t stream):
 		size(0), h_ptr(0), d_ptr(0), h_do_free(false),
 		d_do_free(false), allocator(0), alloc(0), stream(stream)
 	{};
@@ -893,7 +893,7 @@ public:
 	{};
 
 	inline
-	CudaGlobalPtr(size_t size, cudaStream_t stream):
+	CudaGlobalPtr(size_t size, hipStream_t stream):
 		size(size), h_ptr(new T[size]), d_ptr(0), h_do_free(true),
 		d_do_free(false), allocator(0), alloc(0), stream(stream)
 	{};
@@ -905,7 +905,7 @@ public:
 	{};
 
 	inline
-	CudaGlobalPtr(T * h_start, size_t size, cudaStream_t stream):
+	CudaGlobalPtr(T * h_start, size_t size, hipStream_t stream):
 		size(size), h_ptr(h_start), d_ptr(0), h_do_free(false),
 		d_do_free(false), allocator(0), alloc(0), stream(cudaStreamPerThread)
 	{};
@@ -917,7 +917,7 @@ public:
 	{};
 
 	inline
-	CudaGlobalPtr(T * h_start, T * d_start, size_t size, cudaStream_t stream):
+	CudaGlobalPtr(T * h_start, T * d_start, size_t size, hipStream_t stream):
 		size(size), h_ptr(h_start), d_ptr(d_start), h_do_free(false),
 		d_do_free(false), allocator(0), alloc(0), stream(stream)
 	{};
@@ -944,8 +944,8 @@ public:
 	======================================================*/
 
 	CudaCustomAllocator *getAllocator() {return allocator; };
-	cudaStream_t &getStream() {return stream; };
-	void setStream(cudaStream_t s) { stream = s; };
+	hipStream_t &getStream() {return stream; };
+	void setStream(hipStream_t s) { stream = s; };
 
 	void setSize(size_t s) { size = s; };
 	size_t getSize() { return size; };
@@ -1020,7 +1020,7 @@ public:
 			d_ptr = (T*) alloc->getPtr();
 		}
 		else
-			DEBUG_HANDLE_ERROR(cudaMalloc( (void**) &d_ptr, size * sizeof(T)));
+			DEBUG_HANDLE_ERROR(hipMalloc( (void**) &d_ptr, size * sizeof(T)));
 	}
 
 	/**
@@ -1217,7 +1217,7 @@ public:
 	 * Copy a number (size) of bytes from device to the host pointer
 	 */
 	inline
-	void cp_to_host_on_stream(cudaStream_t s)
+	void cp_to_host_on_stream(hipStream_t s)
 	{
 #ifdef DEBUG_CUDA
 		if (d_ptr == NULL)
@@ -1269,7 +1269,7 @@ public:
 	inline
 	void streamSync()
 	{
-		DEBUG_HANDLE_ERROR(cudaStreamSynchronize(stream));
+		DEBUG_HANDLE_ERROR(hipStreamSynchronize(stream));
 	}
 
 	inline
@@ -1325,7 +1325,7 @@ public:
 			alloc = NULL;
 		}
 		else
-			DEBUG_HANDLE_ERROR(cudaFree(d_ptr));
+			DEBUG_HANDLE_ERROR(hipFree(d_ptr));
 		d_ptr = 0;
 	}
 

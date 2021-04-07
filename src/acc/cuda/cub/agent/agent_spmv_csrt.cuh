@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2016, NVIDIA CORPORATION.  All rights reserved.
@@ -28,7 +29,7 @@
 
 /**
  * \file
- * cub::AgentSpmv implements a stateful abstraction of CUDA thread blocks for participating in device-wide SpMV.
+ * hipcub::AgentSpmv implements a stateful abstraction of CUDA thread blocks for participating in device-wide SpMV.
  */
 
 #pragma once
@@ -176,7 +177,7 @@ struct AgentSpmv
     typedef KeyValuePair<OffsetT, ValueT> KeyValuePairT;
 
     // Reduce-value-by-key scan operator
-    typedef ReduceByKeyOp<cub::Sum> ReduceBySegmentOpT;
+    typedef ReduceByKeyOp<hipcub::Sum> ReduceBySegmentOpT;
 
     // BlockReduce specialization
     typedef BlockReduce<

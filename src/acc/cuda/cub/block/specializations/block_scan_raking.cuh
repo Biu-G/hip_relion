@@ -29,7 +29,7 @@
 
 /**
  * \file
- * cub::BlockScanRaking provides variants of raking-based parallel prefix scan across a CUDA thread block.
+ * hipcub::BlockScanRaking provides variants of raking-based parallel prefix scan across a CUDA thread block.
  */
 
 #pragma once

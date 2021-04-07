@@ -1,7 +1,8 @@
+#include "hip/hip_runtime.h"
 #ifndef CUDA_DEVICE_UTILS_CUH_
 #define CUDA_DEVICE_UTILS_CUH_
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include "src/acc/cuda/cuda_settings.h"
 
 #ifdef ACC_DOUBLE_PRECISION

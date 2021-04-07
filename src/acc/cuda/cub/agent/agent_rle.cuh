@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::AgentRle implements a stateful abstraction of CUDA thread blocks for participating in device-wide run-length-encode.
+ * hipcub::AgentRle implements a stateful abstraction of CUDA thread blocks for participating in device-wide run-length-encode.
  */
 
 #pragma once
@@ -189,7 +189,7 @@ struct AgentRle
     typedef WarpScan<LengthOffsetPair> WarpScanPairs;
 
     // Reduce-length-by-run scan operator
-    typedef ReduceBySegmentOp<cub::Sum> ReduceBySegmentOpT;
+    typedef ReduceBySegmentOp<hipcub::Sum> ReduceBySegmentOpT;
 
     // Callback type for obtaining tile prefix during block scan
     typedef TilePrefixCallbackOp<
@@ -280,7 +280,7 @@ struct AgentRle
         d_offsets_out(d_offsets_out),
         d_lengths_out(d_lengths_out),
         equality_op(equality_op),
-        scan_op(cub::Sum()),
+        scan_op(hipcub::Sum()),
         num_items(num_items)
     {}
 

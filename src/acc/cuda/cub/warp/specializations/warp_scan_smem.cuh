@@ -28,7 +28,7 @@
 
 /**
  * \file
- * cub::WarpScanSmem provides smem-based variants of parallel prefix scan of items partitioned across a CUDA thread warp.
+ * hipcub::WarpScanSmem provides smem-based variants of parallel prefix scan of items partitioned across a CUDA thread warp.
  */
 
 #pragma once
@@ -275,7 +275,7 @@ struct WarpScanSmem
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
-        cub::Sum                /*scan_op*/,
+        hipcub::Sum                /*scan_op*/,
         Int2Type<true>          /*is_integer*/)
     {
         // initial value presumed 0
@@ -307,7 +307,7 @@ struct WarpScanSmem
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
-        cub::Sum                scan_op,
+        hipcub::Sum                scan_op,
         T                       initial_value,
         Int2Type<true>          /*is_integer*/)
     {
@@ -341,7 +341,7 @@ struct WarpScanSmem
         T                       &inclusive,
         T                       &exclusive,
         T                       &warp_aggregate,
-        cub::Sum                /*scan_o*/,
+        hipcub::Sum                /*scan_o*/,
         Int2Type<true>          /*is_integer*/)
     {
         // Initial value presumed to be unknown or identity (either way our padding is correct)
