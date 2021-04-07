@@ -111,10 +111,10 @@ if(GUI)
     endif()
 endif(GUI)
 
-if (HIP_FOUND)
+if (CUDA_FOUND)
 
     file(GLOB REL_CUDA_SRC "${CMAKE_SOURCE_DIR}/src/acc/cuda/*.cu" "${CMAKE_SOURCE_DIR}/src/acc/cuda/cuda_kernels/*.cu" )
-    add_library(relion_gpu_util ${REL_CUDA_SRC})
+    cuda_add_library(relion_gpu_util ${REL_CUDA_SRC})
 
     if (${CMAKE_BUILD_TYPE_LOWER} STREQUAL "profiling")
         find_library(NV_TOOLS_LIBRARIES   NAMES nvToolsExt  PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
@@ -146,7 +146,7 @@ if (HIP_FOUND)
     target_link_libraries(relion_lib relion_gpu_util ${CUDA_CUFFT_LIBRARIES})
     target_link_libraries(relion_lib relion_gpu_util ${CUDA_CUFFT_LIBRARIES} ${CUDA_curand_LIBRARY})
     
-endif(HIP_FOUND)
+endif(CUDA_FOUND)
 
 if(TIFF_FOUND)
 	message("TIFF FOUND")
@@ -175,9 +175,9 @@ foreach (_target ${RELION_TARGETS})
 	    target_link_libraries(${_target} ${LIB} ${FFTW_LIBRARIES} ${EXTRA_LIBS} ${MPI_LIBRARIES} ${CMAKE_DL_LIBS})
 	endif(NOT MKLFFT)
 
-	if(HIP_FOUND)
+	if(CUDA_FOUND)
 	    target_link_libraries(${_target} relion_gpu_util)
-	endif(HIP_FOUND)
+	endif(CUDA_FOUND)
 	
 	if (ALTCPU)
 		target_link_libraries(${_target} ${TBB_LIBRARIES})

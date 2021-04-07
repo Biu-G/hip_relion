@@ -7,9 +7,7 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(Relion)
 
 include(/opt/rocm/hip/cmake/FindHIP.cmake)
-if(HIP_FOUND)
-	message("****************HIP FOUND*****************")
-endif(HIP_FOUND)
+
 # Use new policy for OS X @rpath
 if(POLICY CMP0042)
     cmake_policy(SET CMP0042 NEW)
@@ -134,15 +132,15 @@ include(${CMAKE_SOURCE_DIR}/cmake/BuildTypes.cmake)
 if(CUDA)
     # -----------------------------------------------------------------------------CUDA--
     # DOC: http://www.cmake.org/cmake/help/v3.0/module/FindCUDA.html
-    FIND_PACKAGE(HIP)
+    find_package(HIP)
 endif()
 
 if(HIP_FOUND)
     message(STATUS "Using cuda wrapper to compile....")
-    if( (NOT ${HIP_VERSION} VERSION_LESS "7.5") AND (NOT DoublePrec_ACC) )
+    if( (NOT ${HIP_VERSION} VERSION_LESS "3.5") AND (NOT DoublePrec_ACC) )
         message(STATUS "Cuda version is >= 7.5 and single-precision build, enable double usage warning.")
 		set(WARN_DBL "--ptxas-options=-warn-double-usage") # cuda>=7.5
-	elseif( ${HIP_VERSION} VERSION_LESS "7.0")
+	elseif( ${HIP_VERSION} VERSION_LESS "3.0")
 		message(WARNING "Cuda version is less than 7.0, so relion will be compiled without GPU support.")
 		set(CUDA OFF)
     endif()

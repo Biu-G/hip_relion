@@ -114,7 +114,7 @@ endif(GUI)
 if (HIP_FOUND)
 
     file(GLOB REL_CUDA_SRC "${CMAKE_SOURCE_DIR}/src/acc/cuda/*.cu" "${CMAKE_SOURCE_DIR}/src/acc/cuda/cuda_kernels/*.cu" )
-    add_library(relion_gpu_util ${REL_CUDA_SRC})
+    HIP_ADD_LIBRARY(relion_gpu_util ${REL_CUDA_SRC})
 
     if (${CMAKE_BUILD_TYPE_LOWER} STREQUAL "profiling")
         find_library(NV_TOOLS_LIBRARIES   NAMES nvToolsExt  PATHS ${HIP_ROOT_DIR}/lib ${HIP_ROOT_DIR}/lib64)

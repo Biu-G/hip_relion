@@ -6,10 +6,6 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 #endif()
 project(Relion)
 
-include(/opt/rocm/hip/cmake/FindHIP.cmake)
-if(HIP_FOUND)
-	message("****************HIP FOUND*****************")
-endif(HIP_FOUND)
 # Use new policy for OS X @rpath
 if(POLICY CMP0042)
     cmake_policy(SET CMP0042 NEW)
@@ -134,10 +130,10 @@ include(${CMAKE_SOURCE_DIR}/cmake/BuildTypes.cmake)
 if(CUDA)
     # -----------------------------------------------------------------------------CUDA--
     # DOC: http://www.cmake.org/cmake/help/v3.0/module/FindCUDA.html
-    FIND_PACKAGE(HIP)
+    FIND_PACKAGE(CUDA)
 endif()
 
-if(HIP_FOUND)
+if(CUDA_FOUND)
     message(STATUS "Using cuda wrapper to compile....")
     if( (NOT ${CUDA_VERSION} VERSION_LESS "7.5") AND (NOT DoublePrec_ACC) )
         message(STATUS "Cuda version is >= 7.5 and single-precision build, enable double usage warning.")
@@ -150,9 +146,9 @@ if(HIP_FOUND)
     if(CUDA)
         add_definitions(-DCUDA)
     endif()
-else(HIP_FOUND)
+else(CUDA_FOUND)
     message(STATUS "Using non-cuda compilation....")
-endif(HIP_FOUND)
+endif(CUDA_FOUND)
 
 # ------------------------------------------------------------------ALLOCATOR CHOICE--
 option(CachedAlloc "CachedAlloc" ON)
