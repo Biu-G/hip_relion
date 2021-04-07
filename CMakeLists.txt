@@ -7,7 +7,9 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(Relion)
 
 include(/opt/rocm/hip/cmake/FindHIP.cmake)
-
+if(HIP_FOUND)
+	message("****************HIP FOUND*****************")
+endif(HIP_FOUND)
 # Use new policy for OS X @rpath
 if(POLICY CMP0042)
     cmake_policy(SET CMP0042 NEW)
