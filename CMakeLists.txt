@@ -130,10 +130,10 @@ include(${CMAKE_SOURCE_DIR}/cmake/BuildTypes.cmake)
 if(CUDA)
     # -----------------------------------------------------------------------------CUDA--
     # DOC: http://www.cmake.org/cmake/help/v3.0/module/FindCUDA.html
-    FIND_PACKAGE(CUDA)
+    FIND_PACKAGE(HIP)
 endif()
 
-if(CUDA_FOUND)
+if(HIP_FOUND)
     message(STATUS "Using cuda wrapper to compile....")
     if( (NOT ${CUDA_VERSION} VERSION_LESS "7.5") AND (NOT DoublePrec_ACC) )
         message(STATUS "Cuda version is >= 7.5 and single-precision build, enable double usage warning.")
