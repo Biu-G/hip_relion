@@ -70,8 +70,8 @@ bool AccProjector::setMdlDim(
 	}
 	else // 2D model
 	{
-		HANDLE_ERROR(hipMallocPitch(&texArrayReal2D, &pitch2D, sizeof(XFLOAT)*mdlX,mdlY));
-		HANDLE_ERROR(hipMallocPitch(&texArrayImag2D, &pitch2D, sizeof(XFLOAT)*mdlX,mdlY));
+		HANDLE_ERROR(hipMallocPitch((void**)&texArrayReal2D, &pitch2D, sizeof(XFLOAT)*mdlX,mdlY));
+		HANDLE_ERROR(hipMallocPitch((void**)&texArrayImag2D, &pitch2D, sizeof(XFLOAT)*mdlX,mdlY));
 
 		// -- Descriptors of the channel(s) in the texture(s)
 		resDesc_real.resType = hipResourceTypePitch2D;

@@ -203,7 +203,7 @@ foreach (_target ${RELION_TARGETS})
 		target_link_libraries(${_target} ${TIFF_LIBRARIES})
 	endif()
 	
-	#message(STATUS "added ${_target}...")
+	message(STATUS "added ${_target}...")
 	
 	install (TARGETS ${_target} RUNTIME DESTINATION bin)
 endforeach()
