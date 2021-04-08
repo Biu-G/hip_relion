@@ -671,7 +671,11 @@ __global__ void cuda_kernel_rotateOnly(   ACCCOMPLEX *d_Faux,
 		}
 
 		XFLOAT sa, ca;
+#ifdef ACC_DOUBLE_PRECISION
 		sincos((proj+startPsi)*psi, &sa, &ca);
+#else
+		sincosf((proj+startPsi)*psi, &sa, &ca);
+#endif
 		ACCCOMPLEX val;
 
 		projector.project2Dmodel(	 x,y,
@@ -712,7 +716,11 @@ __global__ void cuda_kernel_rotateAndCtf( ACCCOMPLEX *d_Faux,
 		}
 
 		XFLOAT sa, ca;
+#ifdef ACC_DOUBLE_PRECISION
 		sincos((proj+startPsi)*psi, &sa, &ca);
+#else
+		sincosf((proj+startPsi)*psi, &sa, &ca);
+#endif
 		ACCCOMPLEX val;
 
 		projector.project2Dmodel(	 x,y,
