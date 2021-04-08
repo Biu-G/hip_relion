@@ -12,10 +12,10 @@
 #if(defined(CubLog) && defined(__CUDA_ARCH__) && (__CUDA_ARCH__<= 520)) // Intetionally force a warning for new arch
 	#undef CubLog
 #endif
-#include "src/acc/cuda/cub/device/device_radix_sort.cuh"
-#include "src/acc/cuda/cub/device/device_reduce.cuh"
-#include "src/acc/cuda/cub/device/device_scan.cuh"
-#include "src/acc/cuda/cub/device/device_select.cuh"
+#include "hipcub/device/device_radix_sort.hpp"
+#include "hipcub/device/device_reduce.hpp"
+#include "hipcub/device/device_scan.hpp"
+#include "hipcub/device/device_select.hpp"
 
 namespace CudaKernels
 {
