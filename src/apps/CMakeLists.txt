@@ -164,6 +164,12 @@ foreach (_target ${RELION_TARGETS})
 	
 	add_executable(${_target} ${_target}.cpp )
 	set(LIB relion_lib)
+
+	set(HIP_DIR /opt/rocm/hip/lib)
+	set(ROCM_DIR /opt/rocm/lib)
+	link_directories(${HIP_DIR})
+	link_directories(${ROCM_DIR})
+	list(APPEND LIB libamdhip64.so librocfft.so)
 	
  	add_dependencies(${_target} relion_lib)
 	
